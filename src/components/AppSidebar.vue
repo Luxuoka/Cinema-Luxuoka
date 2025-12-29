@@ -30,10 +30,7 @@
         <i class="fas fa-dragon"></i>
         <span>Anime</span>
       </router-link>
-      <router-link to="/live-tv" class="sidebar-item" :class="{ active: $route.path === '/live-tv' }">
-        <i class="fas fa-broadcast-tower"></i>
-        <span>Live TV</span>
-      </router-link>
+
       <router-link to="/genres" class="sidebar-item" :class="{ active: $route.path === '/genres' }">
         <i class="fas fa-tags"></i>
         <span>Genres</span>

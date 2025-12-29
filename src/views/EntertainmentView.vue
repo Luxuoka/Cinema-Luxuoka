@@ -5,17 +5,7 @@
       <p>The best of variety shows, gossip, and light entertainment.</p>
     </div>
 
-    <!-- Live Ent Channels -->
-    <section class="section">
-      <h2 class="section-title">Live Variety Channels</h2>
-      <div class="channels-grid">
-        <ChannelCard 
-          v-for="channel in entChannels" 
-          :key="channel.id" 
-          :channel="channel"
-        />
-      </div>
-    </section>
+    <!-- Live Ent Channels Removed -->
 
     <!-- Music & Musical -->
     <ContentSlider 
@@ -34,15 +24,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import ContentSlider from '../components/ContentSlider.vue'
-import ChannelCard from '../components/ChannelCard.vue'
-import { channels } from '../data/channels'
 import { tmdbFetch, mapTmdbMovie, mapTmdbSeries } from '../services/api'
-
-const entIds = ['transtv', 'trans7', 'antv', 'mnctv', 'gtv', 'rtv', 'tvn'];
-const entChannels = ref([
-  ...channels.lokal.filter(c => entIds.includes(c.id)),
-  ...channels.international.filter(c => entIds.includes(c.id))
-])
 
 const musicContent = ref([])
 const realityContent = ref([])

@@ -54,11 +54,7 @@ const routes = [
         name: 'entertainment',
         component: () => import('../views/EntertainmentView.vue')
     },
-    {
-        path: '/live-tv',
-        name: 'live-tv',
-        component: () => import('../views/LiveTVView.vue')
-    },
+
     {
         path: '/genres',
         name: 'genres',

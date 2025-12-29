@@ -149,15 +149,69 @@
             </button>
           </div>
           
+          <!-- Server Selector (Only in Stream Mode) -->
+          <div v-if="playerMode === 'stream'" class="server-selector">
+            <span class="server-label">Server:</span>
+            <button 
+              :class="['server-btn', { active: selectedServer === 'vidlink' }]"
+              @click="selectedServer = 'vidlink'"
+            >
+              VidLink
+            </button>
+            <button 
+              :class="['server-btn', { active: selectedServer === 'vidsrc' }]"
+              @click="selectedServer = 'vidsrc'"
+            >
+              VidSrc
+            </button>
+            <button 
+              :class="['server-btn', { active: selectedServer === 'vidsrccc' }]"
+              @click="selectedServer = 'vidsrccc'"
+            >
+              VidSrc.cc
+            </button>
+            <button 
+              :class="['server-btn', { active: selectedServer === 'embedsu' }]"
+              @click="selectedServer = 'embedsu'"
+            >
+              Embed.su
+            </button>
+             <button 
+              :class="['server-btn', { active: selectedServer === 'superembed' }]"
+              @click="selectedServer = 'superembed'"
+            >
+              SuperEmbed
+            </button>
+          </div>
+          
           <!-- Video Player -->
           <div class="video-wrapper">
             <iframe 
+              :key="currentEpisode"
               :src="getVideoUrl()"
               frameborder="0"
               allowfullscreen
               allow="autoplay; fullscreen; encrypted-media"
               referrerpolicy="origin"
             ></iframe>
+          </div>
+
+          <!-- Episode Selector (for Series/Anime) -->
+          <div v-if="playerMode === 'stream' && (content.type === 'anime' || content.type === 'series') && content.episodes" class="episode-selector">
+            <div class="selector-header">
+              <h3>Episodes</h3>
+              <span class="episode-count">{{ content.episodes }} Episodes</span>
+            </div>
+            <div class="episode-grid">
+              <button 
+                v-for="ep in content.episodes" 
+                :key="ep"
+                :class="['episode-btn', { active: currentEpisode === ep }]"
+                @click="selectEpisode(ep)"
+              >
+                {{ ep }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -178,7 +232,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getAnimeById, getMovieById, getSeriesById } from '../services/api'
+import { getAnimeById, getMovieById, getSeriesById, findTmdbIdForAnime } from '../services/api'
 import { addToHistory, addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction } from '../stores/userStore'
 
 const route = useRoute()
@@ -187,51 +241,62 @@ const content = ref(null)
 const loading = ref(true)
 const showPlayer = ref(false)
 const playerMode = ref('stream') // 'stream' or 'trailer'
+const selectedServer = ref('vidlink')
 
-const heroStyle = computed(() => {
-  // Use backdrop if available, otherwise poster
-  const bgImage = content.value?.backdrop || content.value?.poster
-  if (bgImage) {
-    return {
-      backgroundImage: `url(${bgImage})`
-    }
-  }
-  return {}
-})
+const currentEpisode = ref(1)
+const currentSeason = ref(1)
 
-const typeBadge = computed(() => {
-  switch (route.params.type) {
-    case 'anime': return 'ANIME'
-    case 'series': return 'TV SHOW'
-    case 'movie': return 'MOVIE'
-    default: return route.params.type?.toUpperCase()
-  }
-})
-
-const inWatchlist = computed(() => {
-  if (!content.value) return false
-  return isInWatchlist(content.value.id, content.value.type || route.params.type)
-})
-
-function toggleWatchlist() {
-  if (!content.value) return
-  
-  if (inWatchlist.value) {
-    removeFromWatchlist(content.value.id, content.value.type)
-  } else {
-    addToWatchlist(content.value)
-  }
-}
-
-// Generate embed URL for movies/series using vidsrc
+// Generate embed URL based on selected server
 function getEmbedUrl() {
   const { type, id } = route.params
+  const tmdbId = content.value?.tmdbMapping?.id || id
+  const isMovie = type === 'movie' || (type === 'anime' && (content.value?.animeType === 'Movie' || content.value?.tmdbMapping?.type === 'movie'))
   
-  // vidsrc.to supports embedding by TMDB ID
-  if (type === 'movie') {
-    return `https://vidsrc.to/embed/movie/${id}`
-  } else if (type === 'series') {
-    return `https://vidsrc.to/embed/tv/${id}`
+  if (selectedServer.value === 'vidlink') {
+    // VidLink
+    if (type === 'anime') {
+      // Use MAL ID directly for anime
+      return `https://vidlink.pro/anime/${id}/${currentEpisode.value}/sub`
+    }
+    
+    if (isMovie) {
+      return `https://vidlink.pro/movie/${tmdbId}`
+    } else {
+      return `https://vidlink.pro/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}`
+    }
+  } else if (selectedServer.value === 'vidsrc') {
+    // VidSrc.to
+    if (isMovie) {
+      return `https://vidsrc.to/embed/movie/${tmdbId}`
+    } else {
+      return `https://vidsrc.to/embed/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}`
+    }
+  } else if (selectedServer.value === 'vidsrccc') {
+    // VidSrc.cc
+    if (type === 'anime') {
+      // Use MAL ID for anime
+      return `https://vidsrc.cc/v2/embed/anime/${id}`
+    }
+    
+    if (isMovie) {
+      return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`
+    } else {
+      return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}`
+    }
+  } else if (selectedServer.value === 'embedsu') {
+    // Embed.su
+    if (isMovie) {
+      return `https://embed.su/embed/movie/${tmdbId}`
+    } else {
+      return `https://embed.su/embed/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}`
+    }
+  } else if (selectedServer.value === 'superembed') {
+    // SuperEmbed
+    if (isMovie) {
+       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1`
+    } else {
+       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${currentSeason.value}&e=${currentEpisode.value}`
+    }
   }
   
   return ''
@@ -250,19 +315,22 @@ function openPlayer(mode = 'stream') {
     if (inWatchlist.value) {
       // Logic handled inside userStore's update logic or could be explicit here
       addToWatchlist(content.value, 'watching')
-    } else {
-      // Add to watchlist as watching automatically? Optional.
-      // For now, just history.
     }
   }
+}
+
+function selectEpisode(ep) {
+  currentEpisode.value = ep
+  // If player is already open, it will reload because currentEpisode is a ref used in computed/methods? 
+  // Wait, getEmbedUrl is called in the template so it's reactive.
 }
 
 // Get the video URL based on mode
 function getVideoUrl() {
   const { type } = route.params
   
-  // For trailer mode or anime (anime only has trailers)
-  if (playerMode.value === 'trailer' || type === 'anime') {
+  // For trailer mode
+  if (playerMode.value === 'trailer') {
     if (content.value?.trailer) {
       // Ensure autoplay
       return content.value.trailer.includes('?') 
@@ -271,13 +339,14 @@ function getVideoUrl() {
     }
   }
   
-  // For stream mode (movies and series)
+  // For stream mode (movies, series, and mapped anime)
   return getEmbedUrl()
 }
 
 async function loadContent() {
   loading.value = true
   content.value = null
+  currentEpisode.value = 1 // Reset to ep 1
   
   try {
     const { type, id } = route.params
@@ -285,6 +354,11 @@ async function loadContent() {
     
     if (type === 'anime') {
       data = await getAnimeById(id)
+      // Try to find TMDB mapping for streaming
+      const tmdbMapping = await findTmdbIdForAnime(data.title, data.titleEnglish, data.animeType)
+      if (tmdbMapping) {
+        data.tmdbMapping = tmdbMapping
+      }
     } else if (type === 'series') {
       data = await getSeriesById(id)
     } else {
@@ -619,6 +693,47 @@ watch(() => route.params, loadContent)
   border-bottom: 1px solid var(--border-color);
 }
 
+.server-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.server-label {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: var(--spacing-xs);
+}
+
+.server-btn {
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-short);
+}
+
+.server-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.server-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
 .mode-btn {
   display: flex;
   align-items: center;
@@ -701,6 +816,61 @@ watch(() => route.params, loadContent)
   .content-title {
     font-size: var(--font-2xl);
   }
+}
+
+/* Episode Selector */
+.episode-selector {
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.selector-header h3 {
+  font-size: var(--font-lg);
+  color: var(--text-primary);
+}
+
+.episode-count {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.episode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.episode-btn {
+  padding: var(--spacing-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.episode-btn:hover {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.episode-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--bg-primary);
 }
 
 @keyframes fadeIn {

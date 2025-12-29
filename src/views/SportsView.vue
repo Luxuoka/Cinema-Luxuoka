@@ -5,18 +5,9 @@
       <p>Live Matches, Highlights, and Documentaries</p>
     </div>
 
-    <!-- Live Sports Channels -->
-    <section class="section">
-      <h2 class="section-title">Live Sports Channels</h2>
-      <div class="channels-grid">
-        <ChannelCard 
-          v-for="channel in sportsChannels" 
-          :key="channel.id" 
-          :channel="channel"
-          @click="openChannel(channel)"
-        />
-      </div>
-    </section>
+    <!-- Live Sports Channels Removed -->
+    
+    <!-- Sports Movies/Docs -->
 
     <!-- Sports Movies/Docs -->
     <ContentSlider 
@@ -63,20 +54,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import ContentSlider from '../components/ContentSlider.vue'
-import ChannelCard from '../components/ChannelCard.vue'
-import { channels } from '../data/channels'
 import { tmdbFetch, mapTmdbMovie } from '../services/api'
 
-const sportsChannels = ref(channels.sports)
 const sportsMovies = ref([])
 const footballContent = ref([])
 const basketballContent = ref([])
 const racingContent = ref([])
 const activeChannel = ref(null)
-
-function openChannel(channel) {
-  activeChannel.value = channel
-}
 
 function closePlayer() {
   activeChannel.value = null

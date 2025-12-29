@@ -20,6 +20,7 @@ export async function getTopAnime(page = 1) {
     year: anime.year || anime.aired?.prop?.from?.year,
     genres: anime.genres?.map(g => g.name) || [],
     type: 'anime',
+    animeType: anime.type,
     synopsis: anime.synopsis,
     episodes: anime.episodes,
     status: anime.status
@@ -38,6 +39,7 @@ export async function searchAnime(query) {
     year: anime.year || anime.aired?.prop?.from?.year,
     genres: anime.genres?.map(g => g.name) || [],
     type: 'anime',
+    animeType: anime.type,
     synopsis: anime.synopsis,
     episodes: anime.episodes,
     status: anime.status
@@ -61,6 +63,7 @@ export async function getAnimeById(id) {
     year: anime.year || anime.aired?.prop?.from?.year,
     genres: anime.genres?.map(g => g.name) || [],
     type: 'anime',
+    animeType: anime.type, // Preserve original type
     synopsis: anime.synopsis,
     episodes: anime.episodes,
     status: anime.status,
@@ -252,6 +255,7 @@ export async function getAnimeByGenre(genreId, page = 1) {
     year: anime.year || anime.aired?.prop?.from?.year,
     genres: anime.genres?.map(g => g.name) || [],
     type: 'anime',
+    animeType: anime.type,
     synopsis: anime.synopsis,
     episodes: anime.episodes,
     status: anime.status
@@ -341,4 +345,31 @@ export async function searchAll(query) {
     searchAnime(query).catch(() => [])
   ]);
   return { movies, series, anime };
+}
+
+// Find TMDB ID for Anime
+export async function findTmdbIdForAnime(title, titleEnglish, type) {
+  try {
+    const isMovie = type === 'Movie' || type === 'movie';
+    const endpoint = isMovie ? '/search/movie' : '/search/tv';
+
+    // Try searching with English title first if available, as TMDB prefers it
+    let queries = [];
+    if (titleEnglish) queries.push(titleEnglish);
+    if (title && title !== titleEnglish) queries.push(title);
+
+    for (const q of queries) {
+      const data = await tmdbFetch(endpoint, { query: q });
+      if (data.results && data.results.length > 0) {
+        // Return the first result's ID
+        return {
+          id: data.results[0].id,
+          type: isMovie ? 'movie' : 'series' // normalize to our app's types
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error finding TMDB ID for anime:', error);
+  }
+  return null;
 }
