@@ -1,76 +1,105 @@
 <template>
-  <section class="hero" :style="heroStyle">
-    <div class="hero__overlay"></div>
-    
-    <div class="hero__content">
-      <div class="hero__badge" v-if="featured">
-        <i class="fas fa-fire"></i>
-        Featured
-      </div>
-      
-      <h1 class="hero__title">{{ featured?.title || 'Loading...' }}</h1>
-      
-      <p v-if="featured?.synopsis" class="hero__description">
-        {{ truncateText(featured.synopsis, 200) }}
-      </p>
-      
-      <div class="hero__meta">
-        <span v-if="featured?.rating" class="meta-item">
-          <i class="fas fa-star"></i>
-          {{ featured.rating }}
-        </span>
-        <span v-if="featured?.year" class="meta-item">
-          <i class="fas fa-calendar"></i>
-          {{ featured.year }}
-        </span>
-        <span v-if="featured?.genres?.length" class="meta-item">
-          <i class="fas fa-tags"></i>
-          {{ featured.genres.slice(0, 3).join(', ') }}
-        </span>
-      </div>
-      
-      <div class="hero__actions">
-        <router-link 
-          v-if="featured" 
-          :to="`/watch/${featured.type}/${featured.id}`" 
-          class="btn btn-primary"
-        >
-          <i class="fas fa-play"></i>
-          Watch Now
-        </router-link>
-        <button class="btn btn-secondary">
-          <i class="fas fa-info-circle"></i>
-          More Info
-        </button>
+  <section class="hero-carousel">
+    <div class="carousel-track" :style="trackStyle">
+      <div 
+        v-for="(item, index) in items" 
+        :key="item.id" 
+        class="hero-slide"
+        :class="{ active: index === currentIndex }"
+        :style="{ backgroundImage: `url(${item.poster})` }"
+      >
+        <div class="hero__overlay"></div>
+        
+        <div class="hero__content">
+          <div class="hero__badge" v-if="index === currentIndex">
+            <i class="fas fa-fire"></i>
+            New Release
+          </div>
+          
+          <h1 class="hero__title">{{ item.title }}</h1>
+          
+          <p v-if="item.synopsis" class="hero__description">
+            {{ truncateText(item.synopsis, 200) }}
+          </p>
+          
+          <div class="hero__meta">
+            <span v-if="item.rating" class="meta-item">
+              <i class="fas fa-star"></i>
+              {{ item.rating }}
+            </span>
+            <span v-if="item.year" class="meta-item">
+              <i class="fas fa-calendar"></i>
+              {{ item.year }}
+            </span>
+            <span v-if="item.genres?.length" class="meta-item">
+              <i class="fas fa-tags"></i>
+              {{ item.genres.slice(0, 3).join(', ') }}
+            </span>
+          </div>
+          
+          <div class="hero__actions">
+            <router-link 
+              :to="`/watch/${item.type || 'movie'}/${item.id}`" 
+              class="btn btn-primary"
+            >
+              <i class="fas fa-play"></i>
+              Watch Now
+            </router-link>
+            <button class="btn btn-secondary" @click="navigateToWatch(item)">
+              <i class="fas fa-info-circle"></i>
+              More Info
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-    
-    <div v-if="featured" class="hero__play-button" @click="navigateToWatch">
-      <i class="fas fa-play"></i>
+
+    <!-- Navigation Buttons -->
+    <button class="nav-btn prev" @click="prevSlide" v-if="items.length > 1">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="nav-btn next" @click="nextSlide" v-if="items.length > 1">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <!-- Indicators -->
+    <div class="carousel-indicators" v-if="items.length > 1">
+      <button 
+        v-for="(item, index) in items.slice(0, 5)" 
+        :key="index"
+        :class="{ active: index === currentIndex }"
+        @click="currentIndex = index"
+      ></button>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
-  featured: {
-    type: Object,
-    default: null
+  items: {
+    type: Array,
+    default: () => []
   }
 })
 
 const router = useRouter()
+const currentIndex = ref(0)
+let autoPlayInterval = null
 
-const heroStyle = computed(() => {
-  if (props.featured?.poster) {
-    return {
-      backgroundImage: `url(${props.featured.poster})`
-    }
+// Only show first 5 items in carousel to keep it performant
+const displayItems = computed(() => props.items.slice(0, 5))
+
+// Simple translation logic: show only current slide? 
+// Or actual slider? Let's do a crossfade/absolute position stack or simple flex translate.
+// For the requested "peek" effect (visualized in mind), standard full-width slider is safer first. 
+// Adding transition-group or simple style binding.
+const trackStyle = computed(() => {
+  return {
+    transform: `translateX(-${currentIndex.value * 100}%)`
   }
-  return {}
 })
 
 function truncateText(text, maxLength) {
@@ -79,45 +108,87 @@ function truncateText(text, maxLength) {
   return text.substring(0, maxLength) + '...'
 }
 
-function navigateToWatch() {
-  if (props.featured) {
-    router.push(`/watch/${props.featured.type}/${props.featured.id}`)
-  }
+function navigateToWatch(item) {
+  router.push(`/watch/${item.type || 'movie'}/${item.id}`)
 }
+
+function nextSlide() {
+  currentIndex.value = (currentIndex.value + 1) % displayItems.value.length
+}
+
+function prevSlide() {
+  currentIndex.value = (currentIndex.value - 1 + displayItems.value.length) % displayItems.value.length
+}
+
+function startAutoPlay() {
+  stopAutoPlay()
+  autoPlayInterval = setInterval(nextSlide, 8000) // 8 seconds per slide
+}
+
+function stopAutoPlay() {
+  if (autoPlayInterval) clearInterval(autoPlayInterval)
+}
+
+onMounted(() => {
+  startAutoPlay()
+})
+
+onUnmounted(() => {
+  stopAutoPlay()
+})
 </script>
 
 <style scoped>
-.hero {
+.hero-carousel {
   position: relative;
-  height: 450px;
-  background-size: cover;
-  background-position: center top;
-  background-color: var(--bg-tertiary);
+  height: 500px;
   border-radius: var(--radius-xl);
   overflow: hidden;
   margin-bottom: var(--spacing-2xl);
+  background: var(--bg-tertiary);
 }
 
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hero-slide {
+  flex: 0 0 100%; /* Full width slides */
+  position: relative;
+  background-size: cover;
+  background-position: center top;
+  display: flex;
+  align-items: center; /* Center content vertically */
+}
+
+/* Specific styling for slide content similar to previous Hero */
 .hero__overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to right,
     rgba(10, 10, 15, 0.95) 0%,
-    rgba(10, 10, 15, 0.7) 50%,
-    rgba(10, 10, 15, 0.4) 100%
+    rgba(10, 10, 15, 0.6) 50%,
+    rgba(10, 10, 15, 0.2) 100%
   );
+  z-index: 1;
 }
 
 .hero__content {
   position: relative;
   z-index: 2;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   padding: var(--spacing-2xl);
   max-width: 600px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s ease 0.3s; /* Delay content appearance */
+}
+
+.hero-slide.active .hero__content {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .hero__badge {
@@ -140,12 +211,17 @@ function navigateToWatch() {
   font-weight: 700;
   margin-bottom: var(--spacing-md);
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
 }
 
 .hero__description {
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: var(--spacing-lg);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .hero__meta {
@@ -172,80 +248,87 @@ function navigateToWatch() {
   gap: var(--spacing-md);
 }
 
-.hero__play-button {
+/* Navigation Buttons */
+.nav-btn {
   position: absolute;
   top: 50%;
-  right: 15%;
   transform: translateY(-50%);
-  width: 80px;
-  height: 80px;
-  background: var(--accent-red-gradient);
-  border-radius: var(--radius-full);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  z-index: 10;
   transition: all var(--transition-normal);
-  box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
-  z-index: 2;
+  backdrop-filter: blur(4px);
 }
 
-.hero__play-button:hover {
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 0 60px rgba(231, 76, 60, 0.7);
+.nav-btn:hover {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
 }
 
-.hero__play-button i {
-  font-size: 2rem;
-  margin-left: 5px;
+.prev { left: var(--spacing-lg); }
+.next { right: var(--spacing-lg); }
+
+/* Indicators */
+.carousel-indicators {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--spacing-sm);
+  z-index: 10;
+}
+
+.carousel-indicators button {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.carousel-indicators button.active {
+  background: var(--accent-primary);
+  transform: scale(1.2);
 }
 
 @media (max-width: 768px) {
-  .hero {
-    height: 400px; /* Slightly taller for mobile to fit content */
-    margin-bottom: var(--spacing-lg);
+  .hero-carousel {
+    height: 400px;
   }
   
   .hero__content {
-    padding: var(--spacing-lg) var(--spacing-md);
+    padding: var(--spacing-lg);
     max-width: 100%;
-    justify-content: flex-end; /* Push content to bottom */
+    margin-top: auto; /* Push content down on mobile */
   }
   
   .hero__title {
-    font-size: var(--font-xl); /* Smaller title */
-    margin-bottom: var(--spacing-sm);
-  }
-  
-  .hero__play-button {
-    display: none;
+    font-size: var(--font-xl);
   }
   
   .hero__description {
-    display: none; /* Hide description on mobile */
+    display: none;
   }
-
-  .hero__meta {
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-  }
-
-  .hero__actions {
-    width: 100%;
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
   }
 
   .hero__actions .btn {
-    flex: 1;
-    justify-content: center;
     padding: var(--spacing-sm);
     font-size: var(--font-sm);
-  }
-}
-
-@media (max-width: 480px) {
-  .hero {
-    height: 350px;
-    border-radius: var(--radius-lg);
   }
 }
 </style>

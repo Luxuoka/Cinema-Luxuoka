@@ -1,6 +1,6 @@
 <template>
   <div class="home-view">
-    <HeroSection :featured="featuredContent" />
+    <HeroSection :items="featuredItems" />
 
     <!-- Trending Movies Slider -->
     <ContentSlider 
@@ -47,7 +47,7 @@ const trendingMovies = ref([])
 const trendingSeries = ref([])
 const newReleases = ref([])
 const animeList = ref([])
-const featuredContent = ref(null)
+const featuredItems = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
@@ -66,11 +66,11 @@ onMounted(async () => {
     newReleases.value = newMovies
     animeList.value = anime
     
-    // Set featured content (random from trending movies)
-    if (movies.length > 0) {
-      const randomIndex = Math.floor(Math.random() * Math.min(5, movies.length))
-      featuredContent.value = movies[randomIndex]
-    }
+    // Set featured items (use New Releases by default for "Now Showing" feel, fallback to Trending)
+    // Filter out items without images
+    const source = newMovies.length > 0 ? newMovies : movies
+    featuredItems.value = source.filter(m => m.poster || m.backdrop).slice(0, 5)
+    
   } catch (error) {
     console.error('Failed to load home content:', error)
   } finally {

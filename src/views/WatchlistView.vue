@@ -411,6 +411,11 @@ function decrementEpisode(item) {
   margin-bottom: var(--spacing-xl);
 }
 
+.empty-state .btn {
+  width: auto;
+  min-width: 200px;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

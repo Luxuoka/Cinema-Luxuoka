@@ -129,7 +129,7 @@
       <div v-if="showPlayer" class="player-modal" @click.self="showPlayer = false">
         <div class="player-container">
           <button class="close-player" @click="showPlayer = false">
-            <i class="fas fa-times"></i>
+            <i class="fas fa-arrow-left"></i> Return
           </button>
           
           <!-- Player Mode Toggle -->
@@ -657,17 +657,13 @@ watch(() => route.params, loadContent)
   position: absolute;
   top: var(--spacing-md);
   right: var(--spacing-md);
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: var(--radius-full);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-lg);
   z-index: 10;
   transition: all var(--transition-normal);
+  padding: 0 var(--spacing-md);
+  width: auto;
+  border-radius: var(--radius-md);
+  gap: var(--spacing-sm);
+  font-weight: 600;
 }
 
 .close-player:hover {
@@ -683,6 +679,7 @@ watch(() => route.params, loadContent)
 .trailer-btn:hover {
   background: #ff0000;
   color: white;
+  border-color: #ff0000;
 }
 
 .player-mode-toggle {

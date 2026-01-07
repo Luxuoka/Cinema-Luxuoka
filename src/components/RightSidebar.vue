@@ -33,39 +33,12 @@
       </div>
     </div>
 
-    <!-- Watchlist Preview -->
+    <!-- Watchlist Preview Removed as per request -->
+    <!-- 
     <div class="sidebar-section">
-      <div class="section-header">
-        <h3 class="sidebar-title">
-          <i class="fas fa-bookmark"></i>
-          Watchlist
-        </h3>
-        <router-link to="/watchlist" class="see-all">See All</router-link>
-      </div>
-      <div class="watchlist-preview">
-        <div v-if="recentWatchlist.length" class="preview-list">
-          <router-link 
-            v-for="item in recentWatchlist" 
-            :key="`${item.type}-${item.id}`"
-            :to="`/watch/${item.type}/${item.id}`"
-            class="preview-item"
-          >
-            <div class="preview-poster">
-              <img v-if="item.poster" :src="item.poster" :alt="item.title" loading="lazy" />
-            </div>
-            <div class="preview-info">
-              <h4>{{ item.title }}</h4>
-              <span class="status-badge" :class="item.status">{{ item.status }}</span>
-            </div>
-          </router-link>
-        </div>
-        <div v-else class="empty-state">
-          <i class="fas fa-plus-circle"></i>
-          <p>Add shows to your watchlist</p>
-          <router-link to="/movies" class="btn-text">Browse Movies</router-link>
-        </div>
-      </div>
-    </div>
+      ...
+    </div> 
+    -->
 
     <!-- Continue Watching -->
     <div class="sidebar-section">
@@ -114,9 +87,12 @@ defineProps({
 })
 
 // Get 3 most recently added watchlist items
+// Watchlist logic removed
+/*
 const recentWatchlist = computed(() => {
   return [...watchlist].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt)).slice(0, 3)
 })
+*/
 
 const continueWatchingList = computed(() => {
   return getContinueWatching(3)

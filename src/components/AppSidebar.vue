@@ -10,10 +10,11 @@
         <i class="fas fa-fire"></i>
         <span>Trending</span>
       </router-link>
-      <a href="#" class="sidebar-item">
+      <!-- Top Rated Removed as per request -->
+      <!-- <a href="#" class="sidebar-item">
         <i class="fas fa-star"></i>
         <span>Top Rated</span>
-      </a>
+      </a> -->
     </div>
 
     <div class="sidebar-section">
@@ -37,30 +38,21 @@
       </router-link>
     </div>
 
+    <!-- Library Section Removed as per request -->
+    <!-- 
     <div class="sidebar-section">
       <h3 class="sidebar-title">Library</h3>
-      <router-link to="/watchlist" class="sidebar-item" :class="{ active: $route.path === '/watchlist' }">
-        <i class="fas fa-bookmark"></i>
-        <span>Watchlist</span>
-        <span v-if="watchlistCount" class="item-badge">{{ watchlistCount }}</span>
-      </router-link>
-      <router-link to="/profile" class="sidebar-item" :class="{ active: $route.path === '/profile' }">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-      </router-link>
-    </div>
+      ...
+    </div> 
+    -->
 
+    <!-- General Section Removed as per request -->
+    <!-- 
     <div class="sidebar-section">
       <h3 class="sidebar-title">General</h3>
-      <a href="#" class="sidebar-item" @click.prevent="handleToggleTheme">
-        <i :class="isDarkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
-        <span>{{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}</span>
-      </a>
-      <a href="#" class="sidebar-item">
-        <i class="fas fa-question-circle"></i>
-        <span>Help</span>
-      </a>
+      ...
     </div>
+    -->
   </aside>
 </template>
 

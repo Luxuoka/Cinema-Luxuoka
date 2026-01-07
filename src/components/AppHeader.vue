@@ -18,9 +18,13 @@
     </nav>
 
     <div class="search-container">
-      <div class="search-bar" :class="{ focused: searchFocused }">
-        <i class="fas fa-search"></i>
+      <div 
+        class="search-bar" 
+        :class="{ focused: searchFocused, 'mobile-open': mobileSearchOpen }"
+      >
+        <i class="fas fa-search" @click="toggleMobileSearch"></i>
         <input 
+          ref="searchInput"
           type="text" 
           v-model="searchQuery"
           placeholder="Search movies, series, anime..."
@@ -28,81 +32,75 @@
           @blur="handleBlur"
           @input="handleSearch"
         />
-        <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
+        <button v-if="searchQuery || mobileSearchOpen" class="clear-btn" @click="clearSearch">
           <i class="fas fa-times"></i>
         </button>
-      </div>
 
-      <!-- Search Results Dropdown -->
-      <div v-if="showResults && (results.movies.length || results.series.length || results.anime.length)" class="search-results">
-        <div v-if="results.movies.length" class="result-section">
-          <h4><i class="fas fa-film"></i> Movies</h4>
-          <router-link 
-            v-for="item in results.movies.slice(0, 3)" 
-            :key="item.id" 
-            :to="`/watch/movie/${item.id}`"
-            class="result-item"
-            @click="clearSearch"
-          >
-            <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-            <div class="result-info">
-              <span class="title">{{ item.title }}</span>
-              <span class="year">{{ item.year }}</span>
-            </div>
-          </router-link>
+        <!-- Search Results Dropdown -->
+        <div v-if="showResults && (results.movies.length || results.series.length || results.anime.length)" class="search-results">
+          <div v-if="results.movies.length" class="result-section">
+            <h4><i class="fas fa-film"></i> Movies</h4>
+            <router-link 
+              v-for="item in results.movies.slice(0, 3)" 
+              :key="item.id" 
+              :to="`/watch/movie/${item.id}`"
+              class="result-item"
+              @click="clearSearch"
+            >
+              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+              <div class="result-info">
+                <span class="title">{{ item.title }}</span>
+                <span class="year">{{ item.year }}</span>
+              </div>
+            </router-link>
+          </div>
+
+          <div v-if="results.series.length" class="result-section">
+            <h4><i class="fas fa-tv"></i> TV Shows</h4>
+            <router-link 
+              v-for="item in results.series.slice(0, 3)" 
+              :key="item.id" 
+              :to="`/watch/series/${item.id}`"
+              class="result-item"
+              @click="clearSearch"
+            >
+              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+              <div class="result-info">
+                <span class="title">{{ item.title }}</span>
+                <span class="year">{{ item.year }}</span>
+              </div>
+            </router-link>
+          </div>
+
+          <div v-if="results.anime.length" class="result-section">
+            <h4><i class="fas fa-dragon"></i> Anime</h4>
+            <router-link 
+              v-for="item in results.anime.slice(0, 3)" 
+              :key="item.id" 
+              :to="`/watch/anime/${item.id}`"
+              class="result-item"
+              @click="clearSearch"
+            >
+              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+              <div class="result-info">
+                <span class="title">{{ item.title }}</span>
+                <span class="year">{{ item.year }}</span>
+              </div>
+            </router-link>
+          </div>
         </div>
 
-        <div v-if="results.series.length" class="result-section">
-          <h4><i class="fas fa-tv"></i> TV Shows</h4>
-          <router-link 
-            v-for="item in results.series.slice(0, 3)" 
-            :key="item.id" 
-            :to="`/watch/series/${item.id}`"
-            class="result-item"
-            @click="clearSearch"
-          >
-            <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-            <div class="result-info">
-              <span class="title">{{ item.title }}</span>
-              <span class="year">{{ item.year }}</span>
-            </div>
-          </router-link>
-        </div>
-
-        <div v-if="results.anime.length" class="result-section">
-          <h4><i class="fas fa-dragon"></i> Anime</h4>
-          <router-link 
-            v-for="item in results.anime.slice(0, 3)" 
-            :key="item.id" 
-            :to="`/watch/anime/${item.id}`"
-            class="result-item"
-            @click="clearSearch"
-          >
-            <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-            <div class="result-info">
-              <span class="title">{{ item.title }}</span>
-              <span class="year">{{ item.year }}</span>
-            </div>
-          </router-link>
-        </div>
-      </div>
-
-      <div v-if="showResults && searching" class="search-results">
-        <div class="searching">
-          <div class="spinner"></div>
-          <span>Searching...</span>
+        <div v-if="showResults && searching" class="search-results">
+          <div class="searching">
+            <div class="spinner"></div>
+            <span>Searching...</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="user-actions">
-      <button class="btn-icon" title="Settings">
-        <i class="fas fa-cog"></i>
-      </button>
-      <button class="btn-icon user-btn" title="Profile">
-        <i class="fas fa-user"></i>
-      </button>
-    </div>
+    <!-- User Actions Removed as per request -->
+    <!-- <div class="user-actions">...</div> -->
   </header>
 </template>
 
@@ -121,9 +119,11 @@ const tabs = [
 
 const searchQuery = ref('')
 const searchFocused = ref(false)
+const mobileSearchOpen = ref(false)
 const showResults = ref(false)
 const searching = ref(false)
 const results = reactive({ movies: [], series: [], anime: [] })
+const searchInput = ref(null)
 
 let searchTimeout = null
 
@@ -135,7 +135,15 @@ function handleBlur() {
   setTimeout(() => {
     searchFocused.value = false
     showResults.value = false
+    // Don't auto-close mobile search on blur to avoid frustration
   }, 200)
+}
+
+function toggleMobileSearch() {
+  mobileSearchOpen.value = !mobileSearchOpen.value
+  if (mobileSearchOpen.value) {
+    setTimeout(() => searchInput.value?.focus(), 100)
+  }
 }
 
 function handleSearch() {
@@ -172,6 +180,9 @@ function clearSearch() {
   results.series = []
   results.anime = []
   showResults.value = false
+  if (mobileSearchOpen.value) {
+    mobileSearchOpen.value = false
+  }
 }
 </script>
 
@@ -393,13 +404,84 @@ function clearSearch() {
   transform: scale(1.05);
 }
 
+/* Global minimalist styles */
+.logo {
+  font-family: 'Inter', sans-serif; /* Ensure clean font */
+  font-weight: 800; /* Extra bold */
+  color: white; /* White text like reference */
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+}
+
+.logo span {
+  display: block; /* Show text */
+}
+
+/* Hide icon to match text-only reference style if needed, 
+   but keeping it optional. User said "like that", reference has no icon.
+   Let's hide the icon for a perfect match. */
+.logo i {
+  display: none; 
+}
+
+.search-container {
+  margin: 0;
+  position: relative;
+  flex: 0;
+}
+
+.search-bar {
+  background: transparent;
+  border: none;
+  padding: var(--spacing-sm);
+  width: 40px;
+  justify-content: center;
+  transition: all var(--transition-normal);
+}
+
+.search-bar input {
+  display: none;
+}
+
+/* Expanded state for both mobile and desktop */
+.search-bar.mobile-open {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 300px;
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  z-index: 99;
+  justify-content: flex-start;
+}
+
+.search-bar.mobile-open input {
+  display: block;
+}
+
+.search-bar i {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .nav-tabs {
     display: none;
   }
   
-  .search-container {
-    margin: 0 var(--spacing-md);
+  .search-bar.mobile-open {
+    position: absolute;
+    top: 70px;
+    right: 0;
+    left: 0;
+    width: 100%;
+    transform: none;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color);
   }
 }
 </style>
