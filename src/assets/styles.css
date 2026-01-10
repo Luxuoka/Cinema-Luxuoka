@@ -330,6 +330,7 @@ h6 {
 
 .content-card:hover {
   transform: translateY(-8px) scale(1.02);
+  z-index: 20;
 }
 
 .content-card:hover .content-card__overlay {

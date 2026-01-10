@@ -1,9 +1,14 @@
 <template>
   <header class="header">
-    <router-link to="/" class="logo">
-      <i class="fas fa-play-circle"></i>
-      <span>Cinema Luxuoka</span>
-    </router-link>
+    <div class="header-left">
+      <button class="hamburger-btn" @click="$emit('toggle-sidebar')">
+        <i class="fas fa-bars"></i>
+      </button>
+      <router-link to="/" class="logo">
+        <i class="fas fa-play-circle"></i>
+        <span>Cinema Luxuoka</span>
+      </router-link>
+    </div>
 
     <nav class="nav-tabs">
       <router-link 
@@ -99,17 +104,29 @@
       </div>
     </div>
 
-    <!-- User Actions Removed as per request -->
-    <!-- <div class="user-actions">...</div> -->
+    <div class="user-actions">
+        <button class="btn-icon theme-toggle" @click="handleThemeToggle" :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+          <i class="fas" :class="isDark ? 'fa-sun' : 'fa-moon'"></i>
+        </button>
+    </div>
   </header>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { searchAll } from '../services/api'
+import { userProfile, toggleTheme } from '../stores/userStore'
 
 const route = useRoute()
+
+const isDark = computed(() => userProfile.theme === 'dark')
+
+function handleThemeToggle() {
+  toggleTheme()
+}
+
+
 
 const tabs = [
   { path: '/movies', label: 'Movies' },
@@ -408,7 +425,7 @@ function clearSearch() {
 .logo {
   font-family: 'Inter', sans-serif; /* Ensure clean font */
   font-weight: 800; /* Extra bold */
-  color: white; /* White text like reference */
+  color: var(--text-primary); /* White text like reference */
   font-size: 1.5rem;
   letter-spacing: -0.5px;
 }

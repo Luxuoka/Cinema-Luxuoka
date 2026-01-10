@@ -6,7 +6,7 @@
         <i class="fas fa-home"></i>
         <span>Home</span>
       </router-link>
-      <router-link to="/movies" class="sidebar-item" :class="{ active: $route.path === '/movies' }">
+      <router-link to="/trending" class="sidebar-item" :class="{ active: $route.path === '/trending' }">
         <i class="fas fa-fire"></i>
         <span>Trending</span>
       </router-link>

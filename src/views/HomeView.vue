@@ -2,6 +2,8 @@
   <div class="home-view">
     <HeroSection :items="featuredItems" />
 
+
+
     <!-- Trending Movies Slider -->
     <ContentSlider 
       title="Trending Movies" 

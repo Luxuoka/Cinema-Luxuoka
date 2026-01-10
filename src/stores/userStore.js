@@ -115,6 +115,8 @@ export function getWatchlistByStatus(status) {
     return watchlist.filter(w => w.status === status)
 }
 
+
+
 // ============ WATCH HISTORY ============
 
 export const watchHistory = reactive(loadFromStorage('cinema_watch_history', []))
@@ -226,6 +228,12 @@ export function getUserStats() {
 export function setTheme(theme) {
     userProfile.theme = theme
     document.documentElement.setAttribute('data-theme', theme)
+
+    // Update meta theme-color
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+    if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', theme === 'dark' ? '#0a0a0f' : '#ffffff')
+    }
 }
 
 export function toggleTheme() {

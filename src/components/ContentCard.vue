@@ -1,5 +1,5 @@
 <template>
-  <div class="content-card animate-slide-up" @mouseenter="showPreview = true" @mouseleave="showPreview = false">
+  <div class="content-card animate-slide-up" @mouseenter="handleMouseEnter" @mouseleave="showPreview = false" ref="cardRef">
     <router-link :to="`/watch/${item.type}/${item.id}`" class="content-card__link">
       <div class="content-card__poster">
         <img 
@@ -52,7 +52,7 @@
     </button>
     
     <!-- Hover Preview -->
-    <div v-if="showPreview" class="content-card__preview">
+    <div v-if="showPreview" class="content-card__preview" :class="{ 'align-left': alignLeft }">
       <div class="preview__header">
         <h4>{{ item.title }}</h4>
         <div class="preview__badge-row">
@@ -107,6 +107,19 @@ const props = defineProps({
 
 const router = useRouter()
 const showPreview = ref(false)
+const alignLeft = ref(false)
+const cardRef = ref(null)
+
+function handleMouseEnter() {
+  if (cardRef.value) {
+    const rect = cardRef.value.getBoundingClientRect()
+    const spaceRight = window.innerWidth - rect.right
+    // Preview width is approx 300px (280px + padding/margin)
+    // If less than 320px space on right, align left
+    alignLeft.value = spaceRight < 320
+  }
+  showPreview.value = true
+}
 
 const typeBadge = computed(() => {
   switch (props.item.type) {
@@ -120,6 +133,9 @@ const typeBadge = computed(() => {
 const inWatchlist = computed(() => {
   return isInWatchlist(props.item.id, props.item.type)
 })
+
+
+
 
 function formatRating(rating) {
   if (typeof rating === 'number') {
@@ -296,6 +312,25 @@ function navigateToWatch() {
   box-shadow: var(--shadow-lg);
   animation: fadeInRight 0.2s ease;
   margin-left: var(--spacing-sm);
+}
+
+.content-card__preview.align-left {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: var(--spacing-sm);
+  animation: fadeInLeft 0.2s ease;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes fadeInRight {

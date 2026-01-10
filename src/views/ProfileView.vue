@@ -94,7 +94,7 @@
 
     <!-- Favorite Genres -->
     <div class="section">
-      <h2 class="section-title"><i class="fas fa-heart"></i> Favorite Genres</h2>
+      <h2 class="section-title"><i class="fas fa-tags"></i> Favorite Genres</h2>
       <div v-if="stats.favoriteGenres.length" class="genre-chips">
         <span v-for="genre in stats.favoriteGenres" :key="genre" class="genre-chip">
           {{ genre }}
@@ -586,4 +586,6 @@ function handleToggleTheme() {
     grid-template-columns: 1fr;
   }
 }
+
+
 </style>

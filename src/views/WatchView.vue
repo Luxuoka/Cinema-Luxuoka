@@ -9,10 +9,10 @@
       <!-- Hero / Backdrop -->
       <div class="watch-hero" :style="heroStyle">
         <div class="watch-hero__overlay"></div>
-        <router-link to="/" class="back-button">
+        <button @click="goBack" class="back-button">
           <i class="fas fa-arrow-left"></i>
           Back
-        </router-link>
+        </button>
       </div>
 
       <!-- Content Details -->
@@ -231,11 +231,12 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getAnimeById, getMovieById, getSeriesById, findTmdbIdForAnime } from '../services/api'
 import { addToHistory, addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction } from '../stores/userStore'
 
 const route = useRoute()
+const router = useRouter()
 
 const content = ref(null)
 const loading = ref(true)
@@ -315,6 +316,24 @@ function openPlayer(mode = 'stream') {
     if (inWatchlist.value) {
       // Logic handled inside userStore's update logic or could be explicit here
       addToWatchlist(content.value, 'watching')
+    }
+  }
+}
+
+function goBack() {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    // Fallback based on content type
+    const type = route.params.type
+    if (type === 'movie') {
+      router.push('/movies')
+    } else if (type === 'series') {
+      router.push('/series')
+    } else if (type === 'anime') {
+      router.push('/anime')
+    } else {
+      router.push('/')
     }
   }
 }
@@ -437,6 +456,9 @@ watch(() => route.params, loadContent)
   text-decoration: none;
   transition: all var(--transition-normal);
   z-index: 10;
+  border: none;
+  font-size: var(--font-md);
+  cursor: pointer;
 }
 
 .back-button:hover {

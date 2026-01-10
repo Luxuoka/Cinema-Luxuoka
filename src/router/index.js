@@ -7,6 +7,7 @@ import WatchView from '../views/WatchView.vue'
 import WatchlistView from '../views/WatchlistView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import GenreView from '../views/GenreView.vue'
+import TrendingView from '../views/TrendingView.vue'
 
 const routes = [
     {
@@ -14,6 +15,12 @@ const routes = [
         name: 'home',
         component: HomeView
     },
+    {
+        path: '/trending',
+        name: 'trending',
+        component: TrendingView
+    },
+
     {
         path: '/movies',
         name: 'movies',

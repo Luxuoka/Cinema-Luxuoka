@@ -103,7 +103,7 @@ const continueWatchingList = computed(() => {
 .right-sidebar {
   width: 280px;
   min-height: calc(100vh - 70px);
-  background: rgba(18, 18, 26, 0.6);
+  background: var(--bg-secondary);
   backdrop-filter: blur(10px);
   border-left: 1px solid var(--border-color);
   padding: var(--spacing-lg) var(--spacing-md);
