@@ -79,7 +79,7 @@ export async function getAnimeById(id) {
 export async function tmdbFetch(endpoint, params = {}) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   url.searchParams.append('api_key', TMDB_API_KEY);
-  url.searchParams.append('language', 'en-US');
+  url.searchParams.append('language', 'id-ID');
   Object.entries(params).forEach(([key, value]) => {
     if (value) url.searchParams.append(key, value);
   });

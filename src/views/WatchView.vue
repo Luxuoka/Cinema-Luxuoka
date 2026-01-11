@@ -276,13 +276,13 @@ function getEmbedUrl() {
     // VidSrc.cc
     if (type === 'anime') {
       // Use MAL ID for anime
-      return `https://vidsrc.cc/v2/embed/anime/${id}`
+      return `https://vidsrc.cc/v2/embed/anime/${id}?autoPlay=true&lang=id`
     }
     
     if (isMovie) {
-      return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`
+      return `https://vidsrc.cc/v2/embed/movie/${tmdbId}?autoPlay=true&lang=id`
     } else {
-      return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}`
+      return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${currentSeason.value}/${currentEpisode.value}?autoPlay=true&lang=id`
     }
   } else if (selectedServer.value === 'embedsu') {
     // Embed.su
@@ -294,9 +294,9 @@ function getEmbedUrl() {
   } else if (selectedServer.value === 'superembed') {
     // SuperEmbed
     if (isMovie) {
-       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1`
+       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&lang=id`
     } else {
-       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${currentSeason.value}&e=${currentEpisode.value}`
+       return `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${currentSeason.value}&e=${currentEpisode.value}&lang=id`
     }
   }
   
