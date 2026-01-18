@@ -46,7 +46,7 @@
           <div v-if="results.movies.length" class="result-section">
             <h4><i class="fas fa-film"></i> Movies</h4>
             <router-link 
-              v-for="item in results.movies.slice(0, 3)" 
+              v-for="item in results.movies.slice(0, 5)" 
               :key="item.id" 
               :to="`/watch/movie/${item.id}`"
               class="result-item"
@@ -54,16 +54,16 @@
             >
               <img v-if="item.poster" :src="item.poster" :alt="item.title" />
               <div class="result-info">
-                <span class="title">{{ item.title }}</span>
-                <span class="year">{{ item.year }}</span>
+                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                <span class="year">{{ item.year }} • Movie</span>
               </div>
             </router-link>
           </div>
 
           <div v-if="results.series.length" class="result-section">
-            <h4><i class="fas fa-tv"></i> TV Shows</h4>
+            <h4><i class="fas fa-tv"></i> TV Series</h4>
             <router-link 
-              v-for="item in results.series.slice(0, 3)" 
+              v-for="item in results.series.slice(0, 5)" 
               :key="item.id" 
               :to="`/watch/series/${item.id}`"
               class="result-item"
@@ -71,8 +71,8 @@
             >
               <img v-if="item.poster" :src="item.poster" :alt="item.title" />
               <div class="result-info">
-                <span class="title">{{ item.title }}</span>
-                <span class="year">{{ item.year }}</span>
+                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                <span class="year">{{ item.year }} • TV Series</span>
               </div>
             </router-link>
           </div>
@@ -80,7 +80,7 @@
           <div v-if="results.anime.length" class="result-section">
             <h4><i class="fas fa-dragon"></i> Anime</h4>
             <router-link 
-              v-for="item in results.anime.slice(0, 3)" 
+              v-for="item in results.anime.slice(0, 5)" 
               :key="item.id" 
               :to="`/watch/anime/${item.id}`"
               class="result-item"
@@ -88,16 +88,16 @@
             >
               <img v-if="item.poster" :src="item.poster" :alt="item.title" />
               <div class="result-info">
-                <span class="title">{{ item.title }}</span>
-                <span class="year">{{ item.year }}</span>
+                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                <span class="year">{{ item.year }} • Anime</span>
               </div>
             </router-link>
           </div>
         </div>
 
-        <div v-if="showResults && searching" class="search-results">
+        <div v-if="showResults && searching" class="search-results spinner-overlay">
           <div class="searching">
-            <div class="spinner"></div>
+            <div class="spinner-small"></div>
             <span>Searching...</span>
           </div>
         </div>
@@ -114,19 +114,18 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { searchAll } from '../services/api'
 import { userProfile, toggleTheme } from '../stores/userStore'
 
 const route = useRoute()
+const router = useRouter()
 
 const isDark = computed(() => userProfile.theme === 'dark')
 
 function handleThemeToggle() {
   toggleTheme()
 }
-
-
 
 const tabs = [
   { path: '/movies', label: 'Movies' },
@@ -143,6 +142,7 @@ const results = reactive({ movies: [], series: [], anime: [] })
 const searchInput = ref(null)
 
 let searchTimeout = null
+let searchAbortController = null
 
 function isActive(path) {
   return route.path === path || (path === '/' && route.path === '/')
@@ -152,7 +152,6 @@ function handleBlur() {
   setTimeout(() => {
     searchFocused.value = false
     showResults.value = false
-    // Don't auto-close mobile search on blur to avoid frustration
   }, 200)
 }
 
@@ -166,7 +165,8 @@ function toggleMobileSearch() {
 function handleSearch() {
   clearTimeout(searchTimeout)
   
-  if (!searchQuery.value.trim()) {
+  const query = searchQuery.value.trim()
+  if (!query) {
     results.movies = []
     results.series = []
     results.anime = []
@@ -174,21 +174,32 @@ function handleSearch() {
     return
   }
 
-  searching.value = true
   showResults.value = true
+  searching.value = true
 
   searchTimeout = setTimeout(async () => {
+    if (searchAbortController) searchAbortController.abort()
+    searchAbortController = new AbortController()
+    
     try {
-      const data = await searchAll(searchQuery.value.trim())
+      const data = await searchAll(query, searchAbortController.signal)
       results.movies = data.movies
       results.series = data.series
       results.anime = data.anime
     } catch (error) {
-      console.error('Search error:', error)
+      if (error.name !== 'AbortError') {
+        console.error('Search failed:', error)
+      }
     } finally {
       searching.value = false
     }
-  }, 500)
+  }, 400) // Increased debounce slightly for stability
+}
+
+function highlightMatch(text, query) {
+  if (!text || !query) return text
+  const regex = new RegExp(`(${query})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
 function clearSearch() {
@@ -197,9 +208,7 @@ function clearSearch() {
   results.series = []
   results.anime = []
   showResults.value = false
-  if (mobileSearchOpen.value) {
-    mobileSearchOpen.value = false
-  }
+  mobileSearchOpen.value = false
 }
 </script>
 
@@ -500,5 +509,31 @@ function clearSearch() {
     border-radius: 0;
     border-top: 1px solid var(--border-color);
   }
+}
+
+/* Search Highlighting */
+:deep(.highlight) {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+.spinner-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

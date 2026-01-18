@@ -38,6 +38,31 @@
       </router-link>
     </div>
 
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Streaming</h3>
+      <router-link 
+        v-for="service in streamingServices" 
+        :key="service.id" 
+        :to="`/streaming/${service.id}`"
+        class="sidebar-item"
+        :class="{ active: $route.path === `/streaming/${service.id}` }"
+      >
+        <span>{{ service.name }}</span>
+      </router-link>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Support</h3>
+      <a 
+        href="https://wa.me/6281806080731?text=Halo%20Admin,%20tolong%20upload%20film%20[Judul]%20tahun%20[Tahun],%20terima%20kasih." 
+        target="_blank" 
+        class="sidebar-item request-btn"
+      >
+        <i class="fab fa-whatsapp"></i>
+        <span>Request Movie</span>
+      </a>
+    </div>
+
     <!-- Library Section Removed as per request -->
     <!-- 
     <div class="sidebar-section">
@@ -59,6 +84,9 @@
 <script setup>
 import { computed } from 'vue'
 import { watchlist, userProfile, toggleTheme } from '../stores/userStore'
+import { getStreamingServices } from '../services/api'
+
+const streamingServices = getStreamingServices()
 
 const props = defineProps({
   isOpen: {
@@ -139,6 +167,15 @@ function handleToggleTheme() {
 
 .sidebar-item.active i {
   color: var(--bg-primary);
+}
+
+.request-btn:hover {
+  background: rgba(37, 211, 102, 0.1) !important;
+  color: #25d366 !important;
+}
+
+.request-btn i {
+  color: #25d366;
 }
 
 .item-badge {

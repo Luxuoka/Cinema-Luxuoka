@@ -1,75 +1,106 @@
 <template>
   <div class="series-view">
-    <div class="page-header">
-      <h1 class="page-title">
-        <i class="fas fa-tv"></i>
-        TV Shows
-      </h1>
-      <div class="search-filter">
+    <div class="view-header">
+      <div class="header-main">
+        <h1>TV Series</h1>
+        <p class="subtitle">Binge-worthy shows from around the world</p>
+      </div>
+      
+      <div class="filter-controls">
         <div class="search-box">
           <i class="fas fa-search"></i>
           <input 
-            v-model="searchQuery" 
             type="text" 
-            placeholder="Search TV shows..."
+            v-model="localSearchQuery" 
+            placeholder="Search in series..." 
             @input="handleSearch"
           />
         </div>
-        <select v-model="sortBy" class="sort-select" @change="loadSeries">
-          <option value="popularity">🔥 Popular</option>
-          <option value="vote_average">⭐ Top Rated</option>
-          <option value="first_air_date">📅 Latest</option>
-        </select>
+        
+        <div class="dropdowns">
+          <div class="select-wrapper">
+            <select v-model="selectedYear" @change="loadSeries">
+              <option :value="null">All Years</option>
+              <option v-for="year in years" :key="year" :value="year">
+                {{ year }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="select-wrapper">
+            <select v-model="selectedCountry" @change="loadSeries">
+              <option :value="null">All Regions</option>
+              <option v-for="c in countries" :key="c.code" :value="c.code">
+                {{ c.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="select-wrapper">
+            <select v-model="sortBy" @change="loadSeries">
+              <option value="popularity">Popular</option>
+              <option value="first_air_date">Newest</option>
+              <option value="vote_average">Top Rated</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Genre Filter Chips -->
-    <div class="genre-chips-container">
+    <!-- Genre Filter -->
+    <div class="genre-list" ref="genreList">
+      <button 
+        :class="['genre-btn', { active: selectedGenre === null }]"
+        @click="toggleGenre(null)"
+      >
+        All Genres
+      </button>
       <button 
         v-for="genre in genres" 
         :key="genre.id"
-        :class="['genre-chip', { active: selectedGenre === genre.id }]"
+        :class="['genre-btn', { active: selectedGenre === genre.id }]"
         @click="toggleGenre(genre.id)"
       >
         {{ genre.name }}
       </button>
     </div>
 
-    <div v-if="loading" class="loading">
-      <div class="spinner"></div>
+    <div v-if="loading" class="loading-state">
+      <div class="content-grid">
+        <SkeletonLoader v-for="i in 12" :key="i" />
+      </div>
     </div>
 
-    <div v-else-if="series.length" class="content-grid">
+    <div v-else-if="series.length > 0" class="content-grid">
       <ContentCard 
-        v-for="show in series" 
-        :key="show.id" 
-        :item="show" 
+        v-for="item in series" 
+        :key="item.id" 
+        :item="item" 
       />
     </div>
 
-    <div v-else class="empty-state">
-      <i class="fas fa-tv"></i>
-      <h3>No TV shows found</h3>
-      <p>Try searching for something else</p>
+    <div v-else class="no-results">
+      <i class="fas fa-search"></i>
+      <h3>No shows found</h3>
+      <p>Try adjusting your search or filters</p>
+      <button @click="resetFilters" class="btn btn-secondary">Reset Filters</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { getTrendingSeries, searchSeries, discoverSeries } from '../services/api'
 import ContentCard from '../components/ContentCard.vue'
-import { getTrendingSeries, searchSeries, discoverSeriesByGenre } from '../services/api'
-
-const route = useRoute()
+import SkeletonLoader from '../components/SkeletonLoader.vue'
 
 const series = ref([])
 const loading = ref(true)
-const searchQuery = ref('')
+const localSearchQuery = ref('')
 const selectedGenre = ref(null)
+const selectedYear = ref(null)
+const selectedCountry = ref(null)
 const sortBy = ref('popularity')
-
-let searchTimeout = null
 
 const genres = [
   { id: 10759, name: 'Action & Adventure' },
@@ -90,32 +121,33 @@ const genres = [
   { id: 37, name: 'Western' }
 ]
 
-onMounted(async () => {
-  // Check for genre query param
-  if (route.query.genre) {
-    const genreId = parseInt(route.query.genre)
-    if (genreId) {
-      selectedGenre.value = genreId
-    }
-  }
-  await loadSeries()
-})
+const years = Array.from({ length: 2026 - 1950 }, (_, i) => 2025 - i)
 
-// Watch for route changes
-watch(() => route.query.genre, async (newGenre) => {
-  if (newGenre) {
-    selectedGenre.value = parseInt(newGenre)
-    await loadSeries()
-  }
-})
+const countries = [
+  { code: 'US', name: 'USA' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'GB', name: 'UK' },
+  { code: 'CN', name: 'China' },
+  { code: 'FR', name: 'France' },
+  { code: 'IN', name: 'India' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'TH', name: 'Thailand' }
+]
 
 async function loadSeries() {
   loading.value = true
   try {
-    if (selectedGenre.value) {
-      series.value = await discoverSeriesByGenre(selectedGenre.value, sortBy.value)
+    if (localSearchQuery.value.trim()) {
+      series.value = await searchSeries(localSearchQuery.value.trim())
     } else {
-      series.value = await getTrendingSeries()
+      series.value = await discoverSeries({
+        genre: selectedGenre.value,
+        year: selectedYear.value,
+        country: selectedCountry.value,
+        sortBy: sortBy.value
+      })
     }
   } catch (error) {
     console.error('Failed to load series:', error)
@@ -124,158 +156,182 @@ async function loadSeries() {
   }
 }
 
+let searchTimeout = null
+function handleSearch() {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    loadSeries()
+  }, 500)
+}
+
 function toggleGenre(genreId) {
-  if (selectedGenre.value === genreId) {
-    selectedGenre.value = null
-  } else {
-    selectedGenre.value = genreId
-  }
+  selectedGenre.value = genreId
   loadSeries()
 }
 
-function handleSearch() {
-  clearTimeout(searchTimeout)
-  
-  if (!searchQuery.value.trim()) {
-    loadSeries()
-    return
-  }
-
-  searchTimeout = setTimeout(async () => {
-    loading.value = true
-    try {
-      const data = await searchSeries(searchQuery.value.trim())
-      series.value = data
-    } catch (error) {
-      console.error('Search failed:', error)
-    } finally {
-      loading.value = false
-    }
-  }, 500)
+function resetFilters() {
+  localSearchQuery.value = ''
+  selectedGenre.value = null
+  selectedYear.value = null
+  selectedCountry.value = null
+  sortBy.value = 'popularity'
+  loadSeries()
 }
+
+onMounted(loadSeries)
 </script>
 
 <style scoped>
 .series-view {
-  animation: fadeIn 0.5s ease;
+  animation: fadeIn 0.4s ease;
 }
 
-.page-header {
+.view-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
+  align-items: flex-end;
+  margin-bottom: var(--spacing-xl);
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+.header-main h1 {
   font-size: var(--font-2xl);
+  margin-bottom: 4px;
 }
 
-.page-title i {
-  color: var(--accent-primary);
+.subtitle {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
 }
 
-.search-filter {
+.filter-controls {
   display: flex;
   gap: var(--spacing-md);
-  align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-box {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  min-width: 250px;
+  position: relative;
+  width: 250px;
 }
 
 .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-muted);
 }
 
 .search-box input {
-  flex: 1;
-  background: transparent;
-  color: var(--text-primary);
-}
-
-.search-box input::placeholder {
-  color: var(--text-muted);
-}
-
-.sort-select {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-tertiary);
+  width: 100%;
+  padding: 10px 10px 10px 35px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  border-radius: 8px;
   color: var(--text-primary);
-  cursor: pointer;
+  font-size: 14px;
 }
 
-/* Genre Chips */
-.genre-chips-container {
+.dropdowns {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xl);
+  gap: 10px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  padding: 10px 15px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.genre-list {
+  display: flex;
+  gap: 10px;
   overflow-x: auto;
-  padding-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  scrollbar-width: none;
 }
 
-.genre-chip {
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--bg-glass);
+.genre-list::-webkit-scrollbar {
+  display: none;
+}
+
+.genre-btn {
+  padding: 8px 20px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   color: var(--text-secondary);
-  font-size: var(--font-sm);
-  cursor: pointer;
   white-space: nowrap;
-  transition: all var(--transition-normal);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.genre-chip:hover {
+.genre-btn:hover {
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
-.genre-chip.active {
-  background: var(--accent-gradient);
-  border-color: transparent;
-  color: var(--bg-primary);
+.genre-btn.active {
+  background: var(--accent-primary);
+  color: #000;
+  border-color: var(--accent-primary);
+  font-weight: 600;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2xl);
-  color: var(--text-muted);
+.no-results {
+  padding: 60px;
   text-align: center;
+  color: var(--text-muted);
 }
 
-.empty-state i {
-  font-size: 4rem;
-  margin-bottom: var(--spacing-lg);
+.no-results i {
+  font-size: 3rem;
+  margin-bottom: 20px;
   opacity: 0.3;
 }
 
-.empty-state h3 {
-  margin-bottom: var(--spacing-sm);
+.no-results h3 {
   color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filter-controls {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+  
+.dropdowns {
+    width: 100%;
+    overflow-x: auto;
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

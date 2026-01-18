@@ -61,6 +61,11 @@ const routes = [
         name: 'entertainment',
         component: () => import('../views/EntertainmentView.vue')
     },
+    {
+        path: '/streaming/:serviceId',
+        name: 'streaming',
+        component: () => import('../views/StreamingView.vue')
+    },
 
     {
         path: '/genres',
@@ -82,6 +87,11 @@ const routes = [
         name: 'watch',
         component: WatchView,
         props: true
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: () => import('../views/NotFoundView.vue')
     }
 ]
 

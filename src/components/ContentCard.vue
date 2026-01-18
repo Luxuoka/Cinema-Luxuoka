@@ -10,7 +10,12 @@
           @error="handleImageError"
         />
         <div v-else class="poster-placeholder">
-          <i class="fas fa-film"></i>
+          <i class="fas fa-image"></i>
+        </div>
+        
+        <!-- Quality Badge -->
+        <div class="quality-badge" :class="qualityClass">
+          {{ item.quality || 'HD' }}
         </div>
         
         <!-- Clean Rating Badge on Poster -->
@@ -137,6 +142,12 @@ const inWatchlist = computed(() => {
 
 
 
+const qualityClass = computed(() => {
+  const q = (props.item.quality || 'HD').toLowerCase()
+  if (q.includes('4k') || q.includes('bluray')) return 'quality-gold'
+  return 'quality-standard'
+})
+
 function formatRating(rating) {
   if (typeof rating === 'number') {
     return rating.toFixed(1)
@@ -223,14 +234,42 @@ function navigateToWatch() {
   border-radius: 4px;
 }
 
-/* Watchlist Indicator - Top Left */
+/* Quality Badge */
+.quality-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  z-index: 5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.quality-standard {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.quality-gold {
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+  color: #000;
+}
+
+/* Watchlist Indicator - Top Left (Moved or adjusted since quality is there) */
 .content-card__watchlist-indicator {
   position: absolute;
-  top: 0;
+  top: 30px; /* Offset below quality badge */
   left: 8px;
   color: var(--accent-primary);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  z-index: 5;
 }
 
 .content-card__info {
