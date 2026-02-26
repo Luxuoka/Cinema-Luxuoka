@@ -106,10 +106,7 @@
             </div>
           </div>
 
-          <!-- Ad Slot: Below Title -->
-          <div class="ad-slot-horizontal">
-            <div id="container-d2706426593aec9632d99709a3ac7c63"></div>
-          </div>
+
 
           <div class="content-meta">
             <span v-if="content.rating" class="meta-item rating">
@@ -215,10 +212,7 @@
              <img :src="content.poster" :alt="content.title" class="side-poster" />
           </div>
 
-          <!-- Ad Slot: Sidebar -->
-          <div class="ad-slot-vertical">
-            <div id="container-d2706426593aec9632d99709a3ac7c63"></div>
-          </div>
+
         </div>
       </div>
     </template>
@@ -251,6 +245,8 @@ const streamingSources = ref([])
 const playerMode = ref('stream') // 'stream' or 'trailer'
 const movieServer = ref(localStorage.getItem('preferred_movie_server') || 'vidlink')
 const animeServer = ref(localStorage.getItem('preferred_anime_server') || 'vidsrccc')
+
+
 
 const selectedServer = computed({
   get: () => route.params.type === 'anime' ? animeServer.value : movieServer.value,
@@ -498,6 +494,7 @@ async function loadContent() {
       data.type = type
       content.value = data
       loading.value = false // Set loading to false early for anime
+
       
       loadProgress()
       saveProgress()
@@ -541,6 +538,7 @@ async function loadContent() {
              streamingSources.value = sources
           }
         })
+
       }
       loading.value = false
     }
@@ -810,17 +808,6 @@ watch(() => route.params, loadContent)
 .synopsis h3 { margin-bottom: 12px; font-size: 18px; color: var(--accent-primary); font-weight: 700; }
 .synopsis p { line-height: 1.8; color: var(--text-secondary); font-size: 15px; }
 
-/* Ad Slots */
-.ad-slot-horizontal {
-  margin-bottom: 25px;
-  width: 100%;
-}
-
-.ad-slot-vertical {
-  width: 100%;
-  margin-top: 10px;
-}
-
 /* Streaming Sources */
 .streaming-sources {
   margin-bottom: 25px;
@@ -858,44 +845,6 @@ watch(() => route.params, loadContent)
 }
 
 .ml-2 { margin-left: 6px; font-size: 10px; opacity: 0.7; }
-
-.ad-placeholder {
-  background: var(--bg-tertiary);
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  gap: 10px;
-  transition: all 0.3s;
-}
-
-.ad-slot-horizontal .ad-placeholder {
-  height: 90px;
-}
-
-.ad-slot-vertical .ad-placeholder {
-  min-height: 250px;
-}
-
-.ad-placeholder:hover {
-  border-color: var(--accent-primary);
-  background: rgba(0, 212, 170, 0.03);
-}
-
-.ad-placeholder i {
-  font-size: 24px;
-  opacity: 0.5;
-}
-
-.ad-placeholder span {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
 
 /* Skeleton Loading */
 .watch-skeleton {
