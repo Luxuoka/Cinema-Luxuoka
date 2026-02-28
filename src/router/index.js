@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import MoviesView from '../views/MoviesView.vue'
 import SeriesView from '../views/SeriesView.vue'
-import AnimeView from '../views/AnimeView.vue'
 import WatchView from '../views/WatchView.vue'
 import WatchlistView from '../views/WatchlistView.vue'
 import ProfileView from '../views/ProfileView.vue'
@@ -32,11 +31,6 @@ const routes = [
         component: SeriesView
     },
     {
-        path: '/anime',
-        name: 'anime',
-        component: AnimeView
-    },
-    {
         path: '/drama',
         name: 'drama',
         component: () => import('../views/DramaView.vue')
@@ -60,11 +54,6 @@ const routes = [
         path: '/entertainment',
         name: 'entertainment',
         component: () => import('../views/EntertainmentView.vue')
-    },
-    {
-        path: '/streaming/:serviceId',
-        name: 'streaming',
-        component: () => import('../views/StreamingView.vue')
     },
 
     {

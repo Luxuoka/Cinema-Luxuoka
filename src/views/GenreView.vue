@@ -64,8 +64,7 @@ const activeType = ref('movies')
 
 const contentTypes = [
   { value: 'movies', label: 'Movies', icon: 'fas fa-film' },
-  { value: 'series', label: 'TV Shows', icon: 'fas fa-tv' },
-  { value: 'anime', label: 'Anime', icon: 'fas fa-dragon' }
+  { value: 'series', label: 'TV Shows', icon: 'fas fa-tv' }
 ]
 
 // Movie/TV Genres (TMDB)
@@ -90,39 +89,13 @@ const movieGenres = [
   { id: 37, name: 'Western', icon: 'fas fa-hat-cowboy', color: '#8d6e63' }
 ]
 
-// Anime Genres (Jikan/MAL)
-const animeGenres = [
-  { id: 1, name: 'Action', icon: 'fas fa-fist-raised', color: '#e74c3c' },
-  { id: 2, name: 'Adventure', icon: 'fas fa-compass', color: '#f39c12' },
-  { id: 4, name: 'Comedy', icon: 'fas fa-laugh', color: '#f1c40f' },
-  { id: 8, name: 'Drama', icon: 'fas fa-theater-masks', color: '#e91e63' },
-  { id: 10, name: 'Fantasy', icon: 'fas fa-hat-wizard', color: '#8e44ad' },
-  { id: 14, name: 'Horror', icon: 'fas fa-ghost', color: '#2c3e50' },
-  { id: 7, name: 'Mystery', icon: 'fas fa-search', color: '#607d8b' },
-  { id: 22, name: 'Romance', icon: 'fas fa-heart', color: '#e91e63' },
-  { id: 24, name: 'Sci-Fi', icon: 'fas fa-rocket', color: '#2196f3' },
-  { id: 36, name: 'Slice of Life', icon: 'fas fa-coffee', color: '#8bc34a' },
-  { id: 30, name: 'Sports', icon: 'fas fa-futbol', color: '#4caf50' },
-  { id: 37, name: 'Supernatural', icon: 'fas fa-magic', color: '#673ab7' },
-  { id: 41, name: 'Suspense', icon: 'fas fa-skull', color: '#c0392b' },
-  { id: 25, name: 'Shoujo', icon: 'fas fa-sparkles', color: '#ff69b4' },
-  { id: 27, name: 'Shounen', icon: 'fas fa-fire', color: '#ff5722' },
-  { id: 42, name: 'Seinen', icon: 'fas fa-user', color: '#3f51b5' },
-  { id: 43, name: 'Josei', icon: 'fas fa-female', color: '#9c27b0' },
-  { id: 13, name: 'Historical', icon: 'fas fa-landmark', color: '#795548' }
-]
+
 
 const currentGenres = computed(() => {
-  if (activeType.value === 'anime') {
-    return animeGenres
-  }
   return movieGenres
 })
 
 const popularGenres = computed(() => {
-  if (activeType.value === 'anime') {
-    return ['Action', 'Romance', 'Fantasy', 'Comedy', 'Shounen', 'Slice of Life']
-  }
   return ['Action', 'Comedy', 'Horror', 'Romance', 'Sci-Fi', 'Thriller']
 })
 </script>

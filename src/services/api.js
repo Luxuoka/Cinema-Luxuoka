@@ -1,30 +1,12 @@
-// API Service for Cinema Luxuoka
-// Jikan API for Anime, TMDB API for Movies & TV Shows
+// TMDB API for Movies & TV Shows
 
 const TMDB_API_KEY = 'a26af8590cebe78675d422a44f16b0bd';
-const WATCHMODE_API_KEY = 'GT0CZsQQBSGRU0RZ1Y5UVDDrcSxiQhSgi5jidHRo';
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
-const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
-const WATCHMODE_BASE_URL = 'https://api.watchmode.com/v1';
-
-// Streaming Service Constants (ID for Watchmode, tmdbId for TMDB Discover)
-export const STREAMING_SERVICES = [
-  { id: 203, tmdbId: 8, name: 'Netflix', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg' },
-  { id: 157, tmdbId: 15, name: 'Hulu', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Hulu_Logo.svg' },
-  { id: 26, tmdbId: 119, name: 'Prime Video', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png' },
-  { id: 372, tmdbId: 337, name: 'Disney+', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg' },
-  { id: 387, tmdbId: 384, name: 'HBO Max', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/HBO_Max_Logo.svg' },
-  { id: 371, tmdbId: 350, name: 'Apple TV+', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/28/Apple_TV_Plus_Logo.svg' }
-];
-
-export function getStreamingServices() {
-  return STREAMING_SERVICES;
-}
 
 // ============ CACHE UTILITY ============
 const CACHE_TTL = 30 * 60 * 1000; // 30 mins for mapping data
-const ANIME_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours for anime details
 const MAPPING_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days for ID mappings
 
 function getCache(key, customTTL = null) {
@@ -57,89 +39,6 @@ function setCache(key, data) {
       keys.slice(0, Math.floor(keys.length / 2)).forEach(k => localStorage.removeItem(k));
     }
   }
-}
-
-// ============ ANIME (Jikan API) ============
-
-export async function getTopAnime(page = 1, signal = null) {
-  const cacheKey = `top_anime_${page}`;
-  const cached = getCache(cacheKey, ANIME_CACHE_TTL);
-  if (cached) return cached;
-
-  const response = await fetch(`${JIKAN_BASE_URL}/top/anime?page=${page}&limit=20`);
-  const data = await response.json();
-  const results = data.data.map(anime => ({
-    id: anime.mal_id,
-    title: anime.title,
-    titleEnglish: anime.title_english,
-    poster: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
-    rating: anime.score,
-    year: anime.year || anime.aired?.prop?.from?.year,
-    genres: anime.genres?.map(g => g.name) || [],
-    type: 'anime',
-    animeType: anime.type,
-    synopsis: anime.synopsis,
-    episodes: anime.episodes,
-    status: anime.status
-  }));
-  setCache(cacheKey, results);
-  return results;
-}
-
-export async function searchAnime(query, signal = null) {
-  // We don't cache search results as often, or use shorter TTL
-  const response = await fetch(`${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&limit=20`, { signal });
-  const data = await response.json();
-  return data.data.map(anime => ({
-    id: anime.mal_id,
-    title: anime.title,
-    titleEnglish: anime.title_english,
-    poster: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
-    rating: anime.score,
-    year: anime.year || anime.aired?.prop?.from?.year,
-    genres: anime.genres?.map(g => g.name) || [],
-    type: 'anime',
-    animeType: anime.type,
-    synopsis: anime.synopsis,
-    episodes: anime.episodes,
-    status: anime.status
-  }));
-}
-
-export async function getAnimeById(id, signal = null) {
-  const cacheKey = `anime_${id}`;
-  const cached = getCache(cacheKey, ANIME_CACHE_TTL);
-  if (cached) return cached;
-
-  const response = await fetch(`${JIKAN_BASE_URL}/anime/${id}/full`, { signal });
-  const data = await response.json();
-  const anime = data.data;
-  const result = {
-    id: anime.mal_id,
-    title: anime.title,
-    titleEnglish: anime.title_english,
-    titleJapanese: anime.title_japanese,
-    poster: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
-    backdrop: anime.images?.jpg?.large_image_url,
-    trailer: anime.trailer?.embed_url,
-    trailerYoutube: anime.trailer?.youtube_id ? `https://www.youtube.com/embed/${anime.trailer.youtube_id}` : null,
-    rating: anime.score,
-    year: anime.year || anime.aired?.prop?.from?.year,
-    genres: anime.genres?.map(g => g.name) || [],
-    type: 'anime',
-    animeType: anime.type, // Preserve original type
-    synopsis: anime.synopsis,
-    episodes: anime.episodes,
-    status: anime.status,
-    duration: anime.duration,
-    studios: anime.studios?.map(s => s.name) || [],
-    source: anime.source,
-    rating_age: anime.rating,
-    external: anime.external || [],
-    imdbId: anime.external?.find(e => e.name === 'IMDb')?.url?.match(/tt\d+/)?.[0] || null
-  };
-  setCache(cacheKey, result);
-  return result;
 }
 
 // ============ MOVIES & TV SHOWS (TMDB API) ============
@@ -337,26 +236,6 @@ export async function discoverSeriesByGenre(genreId, sortBy = 'popularity') {
   return discoverSeries({ genre: genreId, sortBy });
 }
 
-// Get anime by genre (Jikan API)
-export async function getAnimeByGenre(genreId, page = 1) {
-  const response = await fetch(`${JIKAN_BASE_URL}/anime?genres=${genreId}&page=${page}&limit=20&order_by=score&sort=desc`);
-  const data = await response.json();
-  return data.data.map(anime => ({
-    id: anime.mal_id,
-    title: anime.title,
-    titleEnglish: anime.title_english,
-    poster: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
-    rating: anime.score,
-    year: anime.year || anime.aired?.prop?.from?.year,
-    genres: anime.genres?.map(g => g.name) || [],
-    type: 'anime',
-    animeType: anime.type,
-    synopsis: anime.synopsis,
-    episodes: anime.episodes,
-    status: anime.status
-  }));
-}
-
 // Get movie details with trailer
 export async function getMovieById(id, signal = null) {
   const [details, videos] = await Promise.all([
@@ -434,12 +313,11 @@ export async function getSeriesById(id, signal = null) {
 
 // Search all types
 export async function searchAll(query, signal = null) {
-  const [movies, series, anime] = await Promise.all([
+  const [movies, series] = await Promise.all([
     searchMovies(query, signal).catch(() => []),
-    searchSeries(query, signal).catch(() => []),
-    searchAnime(query, signal).catch(() => [])
+    searchSeries(query, signal).catch(() => [])
   ]);
-  return { movies, series, anime };
+  return { movies, series };
 }
 
 // Get TMDB series seasons
@@ -480,231 +358,3 @@ export async function findTmdbIdByImdbId(imdbId) {
   return null;
 }
 
-// Find TMDB ID for Anime
-export async function findTmdbIdForAnime(title, titleEnglish, type, year, imdbId = null) {
-  // 1. Try IMDB mapping first (highest accuracy)
-  let mapping = null;
-  if (imdbId) {
-    mapping = await findTmdbIdByImdbId(imdbId);
-  }
-
-  const cacheKey = `anime_mapping_${title}_${titleEnglish}_${year}_${imdbId}`;
-  const cached = getCache(cacheKey, MAPPING_CACHE_TTL);
-  if (cached) return cached;
-
-  try {
-    const isMovie = type === 'Movie' || type === 'movie' || type === 'OVA' || type === 'Special';
-
-    if (!mapping) {
-      const endpoint = isMovie ? '/search/movie' : '/search/tv';
-      let queries = [];
-      if (titleEnglish) queries.push(titleEnglish);
-      if (title) queries.push(title);
-
-      const suffixQueries = queries.map(q => `${q} Anime`);
-      const allQueries = [...queries, ...suffixQueries];
-
-      for (const q of allQueries) {
-        const params = { query: q };
-        if (year) {
-          if (isMovie) params.year = year;
-          else params.first_air_date_year = year;
-        }
-
-        const data = await tmdbFetch(endpoint, params);
-        if (data.results && data.results.length > 0) {
-          const bestMatch = data.results.find(res => {
-            const resDate = isMovie ? res.release_date : res.first_air_date;
-            if (!resDate || !year) return false;
-            const resYear = resDate.split('-')[0];
-            return resYear === year.toString();
-          }) || data.results[0];
-
-          mapping = {
-            id: bestMatch.id,
-            type: isMovie ? 'movie' : 'series'
-          };
-          break;
-        }
-      }
-    }
-
-    if (mapping && mapping.type === 'series') {
-      // Find the correct season if it's a TV series
-      const seasons = await getTmdbSeriesSeasons(mapping.id);
-      if (seasons.length > 0) {
-        const bestSeason = seasons.find(s => {
-          if (!s.air_date || !year) return false;
-          return s.air_date.split('-')[0] === year.toString();
-        });
-        if (bestSeason) {
-          mapping.season = bestSeason.season_number;
-        } else {
-          mapping.season = 1; // Default fallback
-        }
-      }
-    }
-
-    if (mapping) {
-      setCache(cacheKey, mapping);
-      return mapping;
-    }
-  } catch (error) {
-    console.error('Error finding TMDB ID for anime:', error);
-  }
-  return null;
-}
-
-// ============ WATCHMODE API ============
-
-async function watchmodeFetch(endpoint, params = {}) {
-  const url = new URL(`${WATCHMODE_BASE_URL}${endpoint}`);
-  url.searchParams.append('apiKey', WATCHMODE_API_KEY);
-  Object.entries(params).forEach(([key, value]) => {
-    if (value) url.searchParams.append(key, value);
-  });
-
-  const cacheKey = `watchmode_${endpoint}_${JSON.stringify(params)}`;
-  const cached = getCache(cacheKey, CACHE_TTL);
-  if (cached) return cached;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`Watchmode API Error: ${response.status} ${response.statusText}`);
-      return null;
-    }
-    const data = await response.json();
-    setCache(cacheKey, data);
-    return data;
-  } catch (e) {
-    console.error('Watchmode Fetch Error:', e);
-    return null;
-  }
-}
-
-
-// Use Watchmode API for accurate service-specific catalogs
-export async function getTitlesByService(serviceId, type = 'movie') {
-  // Map 'series' to 'tv_series' for Watchmode
-  const wmType = type === 'series' || type === 'tv' ? 'tv_series' : 'movie';
-
-  const params = {
-    source_ids: serviceId,
-    types: wmType,
-    sort_by: 'popularity_desc',
-    limit: 20,
-    region: 'ID' // Focus on content available in Indonesia if possible
-  };
-
-  try {
-    const data = await watchmodeFetch('/list-titles/', params);
-    if (!data || !data.titles) return [];
-
-    // Watchmode returns basic info. We need to enrich with TMDB for posters/metadata.
-    // We use the tmdb_id provided by Watchmode to fetch full details.
-    const enrichedPromises = data.titles.map(async (t) => {
-      if (!t.tmdb_id) return null; // Skip if no TMDB ID (cant display well)
-
-      try {
-        // Fetch details from TMDB to get the poster and correct localized metadata
-        const tmdbType = t.tmdb_type === 'movie' ? 'movie' : 'tv';
-        const details = await tmdbFetch(`/${tmdbType}/${t.tmdb_id}`);
-
-        if (!details) return null;
-
-        return {
-          id: details.id,
-          title: details.title || details.name,
-          poster: details.poster_path ? `${TMDB_IMAGE_BASE}/w500${details.poster_path}` : 'https://via.placeholder.com/300x450',
-          rating: details.vote_average ? details.vote_average.toFixed(1) : 'N/A',
-          year: (details.release_date || details.first_air_date || '').split('-')[0],
-          type: tmdbType,
-          tmdbMapping: { id: details.id, type: tmdbType }
-        };
-      } catch (e) {
-        return null;
-      }
-    });
-
-    const results = await Promise.all(enrichedPromises);
-    return results.filter(r => r !== null);
-  } catch (error) {
-    console.error('Watchmode fetch failed:', error);
-    return [];
-  }
-}
-
-// Get specialized content (Asian/Local) using TMDB Discover with Provider filter
-export async function getServiceSpecificContent(serviceId, type, country = null, genre = null) {
-  const service = STREAMING_SERVICES.find(s => s.id == serviceId);
-  if (!service || !service.tmdbId) return [];
-
-  const endpoint = type === 'movie' ? '/discover/movie' : '/discover/tv';
-  const params = {
-    with_watch_providers: service.tmdbId,
-    watch_region: 'ID',
-    sort_by: 'popularity.desc',
-    'vote_count.gte': 10
-  };
-
-  if (country) params.with_origin_country = country;
-  if (genre) params.with_genres = genre;
-
-  try {
-    const data = await tmdbFetch(endpoint, params);
-    if (!data.results) return [];
-
-    return data.results.map(item => ({
-      id: item.id,
-      title: item.title || item.name,
-      poster: item.poster_path ? `${TMDB_IMAGE_BASE}/w500${item.poster_path}` : null,
-      rating: item.vote_average ? item.vote_average.toFixed(1) : 'N/A',
-      year: (item.release_date || item.first_air_date || '').split('-')[0],
-      type: type === 'movie' ? 'movie' : 'series',
-      tmdbMapping: { id: item.id, type: type === 'movie' ? 'movie' : 'series' } // Explicit mapping
-    }));
-  } catch (e) {
-    return [];
-  }
-}
-
-// Get streaming sources for a specific movie/show
-export async function getStreamingSources(tmdbId, type) {
-  // 1. Find Watchmode ID
-  const searchType = type === 'series' ? 'tv' : 'movie';
-  // Note: Watchmode search param for type is 'movie' or 'tv'
-
-  const searchData = await watchmodeFetch(`/search/`, {
-    search_field: 'tmdb_id',
-    search_value: tmdbId,
-    types: searchType
-  });
-
-  if (!searchData || !searchData.title_results || searchData.title_results.length === 0) {
-    return [];
-  }
-
-  const watchmodeId = searchData.title_results[0].id;
-
-  // 2. Get Sources
-  const sourcesData = await watchmodeFetch(`/title/${watchmodeId}/sources/`);
-
-  if (!sourcesData) return [];
-
-  // Filter and map
-  return sourcesData
-    .filter(s => s.type === 'sub' || s.type === 'free') // Subscription or Free
-    .map(s => ({
-      source_id: s.source_id,
-      name: s.name,
-      type: s.type,
-      region: s.region,
-      web_url: s.web_url,
-      format: s.format,
-      price: s.price,
-      seasons: s.seasons,
-      episodes: s.episodes,
-      logo: STREAMING_SERVICES.find(srv => srv.id == s.source_id)?.logo || null
-    }));
-}

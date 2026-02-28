@@ -103,6 +103,7 @@ const continueWatchingList = computed(() => {
 .right-sidebar {
   width: 280px;
   min-height: calc(100vh - 70px);
+  max-height: calc(100vh - 70px);
   background: var(--bg-secondary);
   backdrop-filter: blur(10px);
   border-left: 1px solid var(--border-color);
@@ -110,6 +111,27 @@ const continueWatchingList = computed(() => {
   position: sticky;
   top: 70px;
   overflow-y: auto;
+
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+.right-sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.right-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.right-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+
+.right-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .sidebar-section {

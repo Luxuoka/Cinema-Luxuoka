@@ -74,11 +74,7 @@
     <div class="section">
       <h2 class="section-title"><i class="fas fa-chart-pie"></i> Content Breakdown</h2>
       <div class="breakdown-grid">
-        <div class="breakdown-card anime">
-          <i class="fas fa-dragon"></i>
-          <span class="breakdown-count">{{ stats.animeCount }}</span>
-          <span class="breakdown-label">Anime</span>
-        </div>
+
         <div class="breakdown-card movies">
           <i class="fas fa-film"></i>
           <span class="breakdown-count">{{ stats.movieCount }}</span>
@@ -181,13 +177,7 @@ const achievements = computed(() => [
     icon: 'fas fa-couch',
     unlocked: stats.value.completed >= 5
   },
-  {
-    id: 'anime_lover',
-    title: 'Anime Lover',
-    description: 'Add 5 anime to watchlist',
-    icon: 'fas fa-dragon',
-    unlocked: stats.value.animeCount >= 5
-  },
+
   {
     id: 'movie_buff',
     title: 'Movie Buff',
@@ -413,7 +403,7 @@ function handleToggleTheme() {
 /* Breakdown */
 .breakdown-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-md);
 }
 
@@ -434,7 +424,6 @@ function handleToggleTheme() {
   margin-bottom: var(--spacing-sm);
 }
 
-.breakdown-card.anime i { color: #e74c3c; }
 .breakdown-card.movies i { color: #f39c12; }
 .breakdown-card.series i { color: #3498db; }
 

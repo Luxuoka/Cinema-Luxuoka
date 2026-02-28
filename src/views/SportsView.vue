@@ -38,7 +38,7 @@
           <div class="premium-placeholder">
             <i class="fas fa-lock"></i>
             <h3>Premium Sports Channel</h3>
-            <p>Live matching streaming is available for Premium subscribers only.</p>
+            <p>Live matching is available for Premium subscribers only.</p>
             <button class="btn btn-primary" style="margin-top: 20px;">Subscribe Now</button>
           </div>
         </div>

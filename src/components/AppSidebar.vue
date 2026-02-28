@@ -10,11 +10,11 @@
         <i class="fas fa-fire"></i>
         <span>Trending</span>
       </router-link>
-      <!-- Top Rated Removed as per request -->
-      <!-- <a href="#" class="sidebar-item">
-        <i class="fas fa-star"></i>
-        <span>Top Rated</span>
-      </a> -->
+      <router-link to="/watchlist" class="sidebar-item" :class="{ active: $route.path === '/watchlist' }">
+        <i class="fas fa-bookmark"></i>
+        <span>Watchlist</span>
+        <span v-if="watchlistCount > 0" class="item-badge">{{ watchlistCount }}</span>
+      </router-link>
     </div>
 
     <div class="sidebar-section">
@@ -27,29 +27,33 @@
         <i class="fas fa-tv"></i>
         <span>TV Shows</span>
       </router-link>
-      <router-link to="/anime" class="sidebar-item" :class="{ active: $route.path === '/anime' }">
-        <i class="fas fa-dragon"></i>
-        <span>Anime</span>
-      </router-link>
 
-      <router-link to="/genres" class="sidebar-item" :class="{ active: $route.path === '/genres' }">
+      <!-- Expandable Genres -->
+      <div class="sidebar-item expandable" :class="{ expanded: genresExpanded }" @click="genresExpanded = !genresExpanded">
         <i class="fas fa-tags"></i>
         <span>Genres</span>
-      </router-link>
+        <i class="fas fa-chevron-down expand-icon"></i>
+      </div>
+      <transition name="expand">
+        <div v-if="genresExpanded" class="genre-submenu">
+          <router-link 
+            v-for="genre in genres" 
+            :key="genre.id" 
+            :to="`/genres?genre=${genre.id}`" 
+            class="sidebar-subitem"
+          >
+            <span class="genre-dot" :style="{ background: genre.color }"></span>
+            {{ genre.name }}
+          </router-link>
+          <router-link to="/genres" class="sidebar-subitem see-all-genres">
+            <i class="fas fa-grid-horizontal"></i>
+            See All Genres
+          </router-link>
+        </div>
+      </transition>
     </div>
 
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Streaming</h3>
-      <router-link 
-        v-for="service in streamingServices" 
-        :key="service.id" 
-        :to="`/streaming/${service.id}`"
-        class="sidebar-item"
-        :class="{ active: $route.path === `/streaming/${service.id}` }"
-      >
-        <span>{{ service.name }}</span>
-      </router-link>
-    </div>
+
 
     <div class="sidebar-section">
       <h3 class="sidebar-title">Support</h3>
@@ -62,31 +66,25 @@
         <span>Request Movie</span>
       </a>
     </div>
-
-    <!-- Library Section Removed as per request -->
-    <!-- 
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Library</h3>
-      ...
-    </div> 
-    -->
-
-    <!-- General Section Removed as per request -->
-    <!-- 
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">General</h3>
-      ...
-    </div>
-    -->
   </aside>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { watchlist, userProfile, toggleTheme } from '../stores/userStore'
-import { getStreamingServices } from '../services/api'
 
-const streamingServices = getStreamingServices()
+const genresExpanded = ref(false)
+
+const genres = [
+  { id: 28, name: 'Action', color: '#e74c3c' },
+  { id: 35, name: 'Comedy', color: '#f39c12' },
+  { id: 18, name: 'Drama', color: '#3498db' },
+  { id: 27, name: 'Horror', color: '#8e44ad' },
+  { id: 10749, name: 'Romance', color: '#e91e63' },
+  { id: 878, name: 'Sci-Fi', color: '#00d4aa' },
+  { id: 53, name: 'Thriller', color: '#e67e22' },
+  { id: 16, name: 'Animation', color: '#2ecc71' },
+]
 
 const props = defineProps({
   isOpen: {
@@ -108,7 +106,7 @@ function handleToggleTheme() {
 <style scoped>
 .sidebar {
   width: 240px;
-  position: fixed; /* Fixed for both mobile and desktop to ensure scroll consistency */
+  position: fixed;
   top: 70px;
   bottom: 0;
   height: auto;
@@ -119,6 +117,27 @@ function handleToggleTheme() {
   overflow-y: auto;
   transition: transform var(--transition-normal);
   z-index: 50;
+
+  /* Custom scrollbar for sidebar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .sidebar-section {
@@ -129,44 +148,125 @@ function handleToggleTheme() {
   font-size: var(--font-xs);
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   padding: 0 var(--spacing-md);
   margin-bottom: var(--spacing-sm);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 10px var(--spacing-md);
   color: var(--text-secondary);
   border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
+  transition: all 0.25s ease;
   text-decoration: none;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   font-weight: 500;
+  font-size: 14px;
+  position: relative;
 }
 
 .sidebar-item i {
   width: 20px;
   text-align: center;
   font-size: var(--font-md);
+  transition: color 0.25s ease;
 }
 
 .sidebar-item:hover {
   color: var(--text-primary);
-  background: var(--bg-glass);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-item:hover i {
+  color: var(--accent-primary);
 }
 
 .sidebar-item.active {
-  color: var(--bg-primary);
+  color: #000;
   background: var(--accent-gradient);
   font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 212, 170, 0.25);
 }
 
 .sidebar-item.active i {
-  color: var(--bg-primary);
+  color: #000;
+}
+
+/* Expandable Genre Item */
+.sidebar-item.expandable {
+  cursor: pointer;
+}
+
+.expand-icon {
+  margin-left: auto;
+  font-size: 10px;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-item.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Genre Submenu */
+.genre-submenu {
+  padding-left: 20px;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+.sidebar-subitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-bottom: 1px;
+}
+
+.sidebar-subitem:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  padding-left: calc(var(--spacing-md) + 4px);
+}
+
+.genre-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.see-all-genres {
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.see-all-genres:hover {
+  color: var(--accent-primary);
+}
+
+/* Expand transition */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  max-height: 400px;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
 }
 
 .request-btn:hover {
@@ -186,6 +286,8 @@ function handleToggleTheme() {
   padding: 2px 8px;
   border-radius: var(--radius-xl);
   font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 
 .sidebar-item.active .item-badge {

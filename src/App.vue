@@ -16,20 +16,31 @@
       </main>
       <RightSidebar :popular-items="popularItems" />
     </div>
+    <ToastNotification ref="toastRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import AppSidebar from './components/AppSidebar.vue'
 import RightSidebar from './components/RightSidebar.vue'
-import { getTopAnime } from './services/api'
+import ToastNotification from './components/ToastNotification.vue'
+import { getTrendingSeries } from './services/api'
 
 const route = useRoute()
 const popularItems = ref([])
 const isSidebarOpen = ref(false)
+const toastRef = ref(null)
+
+// Provide toast method globally
+const showToast = (message, type = 'info', duration = 4000) => {
+  if (toastRef.value) {
+    toastRef.value.addToast(message, type, duration)
+  }
+}
+provide('toast', showToast)
 
 // Close sidebar on route change (mobile)
 watch(() => route.path, () => {
@@ -38,8 +49,8 @@ watch(() => route.path, () => {
 
 onMounted(async () => {
   try {
-    const anime = await getTopAnime()
-    popularItems.value = anime.slice(0, 5)
+    const series = await getTrendingSeries()
+    popularItems.value = series.slice(0, 5)
   } catch (error) {
     console.error('Failed to load popular items:', error)
   }

@@ -139,20 +139,7 @@
 
 
 
-          <div v-if="streamingSources.length > 0" class="streaming-sources">
-            <h3>Tersedia di:</h3>
-            <div class="source-buttons">
-              <div 
-                v-for="source in streamingSources" 
-                :key="source.source_id"
-                class="source-badge"
-              >
-                 <img v-if="source.logo" :src="source.logo" :alt="source.name" class="source-icon" />
-                 <span v-else>{{ source.name }}</span>
-                 <span class="source-price" v-if="source.price">{{ source.price }}</span>
-              </div>
-            </div>
-          </div>
+
 
           <div class="synopsis">
             <h3>Sinopsis</h3>
@@ -229,35 +216,28 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getAnimeById, getMovieById, getSeriesById, findTmdbIdForAnime, getStreamingSources } from '../services/api'
+import { getMovieById, getSeriesById } from '../services/api'
 import { addToHistory, addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction, updateEpisodeProgress } from '../stores/userStore'
+import { trackContentView, trackPlayStart } from '../services/analytics'
 
 const route = useRoute()
 const router = useRouter()
+const showToast = inject('toast')
 
 let abortController = null
 
 const content = ref(null)
 const loading = ref(true)
-const streamingSources = ref([])
 const playerMode = ref('stream') // 'stream' or 'trailer'
 const movieServer = ref(localStorage.getItem('preferred_movie_server') || 'vidlink')
-const animeServer = ref(localStorage.getItem('preferred_anime_server') || 'vidsrccc')
-
-
 
 const selectedServer = computed({
-  get: () => route.params.type === 'anime' ? animeServer.value : movieServer.value,
+  get: () => movieServer.value,
   set: (val) => {
-    if (route.params.type === 'anime') {
-      animeServer.value = val
-      localStorage.setItem('preferred_anime_server', val)
-    } else {
-      movieServer.value = val
-      localStorage.setItem('preferred_movie_server', val)
-    }
+    movieServer.value = val
+    localStorage.setItem('preferred_movie_server', val)
   }
 })
 
@@ -272,14 +252,13 @@ const servers = [
   { id: 'vidlink', label: 'VidLink' },
   { id: 'vidsrc', label: 'VidSrc.to' },
   { id: 'embedsu', label: 'Embed.su' },
-  { id: '2embed', label: '2Embed' },
-  { id: 'animesrc', label: 'AnimeSrc' }
+  { id: '2embed', label: '2Embed' }
 ]
 
 
 const isSeries = computed(() => {
   if (!content.value) return false
-  return content.value.type === 'anime' || content.value.type === 'series'
+  return content.value.type === 'series'
 })
 
 const inWatchlist = computed(() => {
@@ -290,7 +269,6 @@ const inWatchlist = computed(() => {
 const typeBadge = computed(() => {
   if (!content.value) return ''
   switch (content.value.type) {
-    case 'anime': return 'Anime'
     case 'series': return 'TV Series'
     default: return 'Movie'
   }
@@ -305,110 +283,41 @@ function getEmbedUrl() {
   const tmdbId = tmdbMapping?.id
   const mappedSeason = tmdbMapping?.season
   const imdbId = content.value.imdbId
-  const animeType = content.value.animeType
   
-  // Decide if it's movie logic - For anime, use animeType directly
-  const isMovie = (type === 'anime' && (animeType === 'Movie' || animeType === 'Special' || tmdbMapping?.type === 'movie')) ||
-                  (type !== 'anime' && !isSeries.value)
+  const isMovie = !isSeries.value
   
-  // Use TMDB Season if mapped, otherwise use currentSeason
   const activeSeason = mappedSeason || currentSeason.value
   const activeEpisode = currentEpisode.value
 
-  // Priority ID for standard servers
-  const mainId = tmdbId || imdbId
+  const mainId = tmdbId || imdbId || id
   
   if (selectedServer.value === 'vidsrcpro') {
-    // For anime without TMDB mapping, use 2embed.skin which works better with anime
-    if (type === 'anime' && !mainId) {
-      // Use 2embed.skin for anime with MAL ID format
-      if (isMovie) return `https://2embed.skin/embed/anime/mal-${id}`
-      return `https://2embed.skin/embed/anime/mal-${id}/${activeEpisode}`
-    }
-    if (mainId) {
-       if (isMovie) return `https://vidsrc.pro/embed/movie/${mainId}`
-       return `https://vidsrc.pro/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    if (isMovie) return `https://vidsrc.pro/embed/movie/${id}`
-    return `https://vidsrc.pro/embed/tv/${id}/${activeSeason}/${activeEpisode}`
+    if (isMovie) return `https://vidsrc.pro/embed/movie/${mainId}`
+    return `https://vidsrc.pro/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
 
   } else if (selectedServer.value === 'vidsrccc') {
-    // For anime without TMDB mapping, use 2embed.skin which works better with anime
-    if (type === 'anime' && !mainId) {
-      if (isMovie) return `https://2embed.skin/embed/anime/mal-${id}`
-      return `https://2embed.skin/embed/anime/mal-${id}/${activeEpisode}`
-    }
-    if (mainId) {
-      if (isMovie) return `https://vidsrc.cc/v2/embed/movie/${mainId}`
-      return `https://vidsrc.cc/v2/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    if (isMovie) return `https://vidsrc.cc/v2/embed/movie/${id}`
-    return `https://vidsrc.cc/v2/embed/tv/${id}/${activeSeason}/${activeEpisode}`
+    if (isMovie) return `https://vidsrc.cc/v2/embed/movie/${mainId}`
+    return `https://vidsrc.cc/v2/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
 
   } else if (selectedServer.value === 'vidsrcme') {
-    // For anime, try 2embed.skin which has better anime support
-    if (type === 'anime' && !mainId) {
-      if (isMovie) return `https://2embed.skin/embed/anime/mal-${id}`
-      return `https://2embed.skin/embed/anime/mal-${id}/${activeEpisode}`
-    }
-    if (mainId) {
-       // Prefer TMDB/IMDB ID if available as it's often more reliable
-       if (isMovie) return `https://vidsrc.me/embed/movie/${mainId}`
-       return `https://vidsrc.me/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    if (isMovie) return `https://vidsrc.me/embed/movie/${id}`
-    return `https://vidsrc.me/embed/tv/${id}/${activeSeason}/${activeEpisode}`
+    if (isMovie) return `https://vidsrc.me/embed/movie/${mainId}`
+    return `https://vidsrc.me/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
 
   } else if (selectedServer.value === 'vidlink') {
-    // For anime without TMDB mapping, use 2embed.skin
-    if (type === 'anime' && !mainId) {
-      if (isMovie) return `https://2embed.skin/embed/anime/mal-${id}`
-      return `https://2embed.skin/embed/anime/mal-${id}/${activeEpisode}`
-    }
-    if (mainId) {
-      if (isMovie) return `https://vidlink.pro/embed/movie/${mainId}`
-      return `https://vidlink.pro/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    if (isMovie) return `https://vidlink.pro/embed/movie/${id}`
-    return `https://vidlink.pro/embed/tv/${id}/${activeSeason}/${activeEpisode}`
+    if (isMovie) return `https://vidlink.pro/embed/movie/${mainId}`
+    return `https://vidlink.pro/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
     
   } else if (selectedServer.value === 'vidsrc') {
-    // VidSrc.to requires TMDB or IMDB
-    if (!mainId) return '' 
     if (isMovie) return `https://vidsrc.to/embed/movie/${mainId}`
     return `https://vidsrc.to/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
 
   } else if (selectedServer.value === 'embedsu') {
-    if (!mainId) return ''
     if (isMovie) return `https://embed.su/embed/movie/${mainId}`
     return `https://embed.su/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
     
   } else if (selectedServer.value === '2embed') {
-    // 2Embed has better anime support via 2embed.skin
-    if (type === 'anime') {
-      if (isMovie) return `https://2embed.skin/embed/anime/mal-${id}`
-      return `https://2embed.skin/embed/anime/mal-${id}/${activeEpisode}`
-    }
-    if (mainId) {
-      if (isMovie) return `https://2embed.skin/embed/movie/${mainId}`
-      return `https://2embed.skin/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    return ''
-    
-  } else if (selectedServer.value === 'animesrc') {
-    // AnimeSrc uses a different approach - anime-specific embeds
-    if (type === 'anime') {
-      // Try gogoanime-based embed that supports anime titles
-      const animeName = encodeURIComponent(content.value?.title || '')
-      if (isMovie) return `https://embtaku.pro/embedplus?id=${animeName}&episode=1`
-      return `https://embtaku.pro/embedplus?id=${animeName}&episode=${activeEpisode}`
-    }
-    // Fallback to regular embed for non-anime
-    if (mainId) {
-      if (isMovie) return `https://vidsrc.cc/v2/embed/movie/${mainId}`
-      return `https://vidsrc.cc/v2/embed/tv/${mainId}/${activeSeason}/${activeEpisode}`
-    }
-    return ''
+    if (isMovie) return `https://multiembed.mov/directstream.php?video_id=${mainId}`
+    return `https://multiembed.mov/directstream.php?video_id=${mainId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
   }
   
   return ''
@@ -418,6 +327,7 @@ function selectEpisode(ep) {
   currentEpisode.value = ep
   playerMode.value = 'stream'
   saveProgress()
+  if (showToast) showToast(`Memutar Episode ${ep}`, 'info')
 }
 
 function nextEpisode() {
@@ -429,6 +339,11 @@ function nextEpisode() {
 function saveProgress() {
   if (!content.value) return
   
+  trackPlayStart(content.value.id, {
+    type: content.value.type,
+    server: selectedServer.value,
+  })
+
   // Save to localStorage
   const progressKey = `progress_${content.value.type}_${content.value.id}`
   localStorage.setItem(progressKey, JSON.stringify({
@@ -489,71 +404,38 @@ async function loadContent() {
     const { type, id } = route.params
     let data = null
     
-    if (type === 'anime') {
-      data = await getAnimeById(id, signal)
+    if (type === 'series') {
+      data = await getSeriesById(id, signal)
+    } else {
+      data = await getMovieById(id, signal)
+    }
+      
+    if (data && !signal.aborted) {
       data.type = type
       content.value = data
-      loading.value = false // Set loading to false early for anime
-
-      
       loadProgress()
       saveProgress()
-      if (data.genres) trackGenreInteraction(data.genres)
-
-      // Background search for TMDB mapping to support more servers
-      // Passing imdbId for 100% accuracy
-      findTmdbIdForAnime(data.title, data.titleEnglish, data.animeType, data.year, data.imdbId)
-        .then(tmdbMapping => {
-          if (tmdbMapping && !signal.aborted && content.value?.id === id) {
-            content.value.tmdbMapping = tmdbMapping
-            
-            // Fetch sources once we have TMDB ID
-            getStreamingSources(tmdbMapping.id, tmdbMapping.type).then(sources => {
-                if (!signal.aborted && content.value?.id === id) {
-                   streamingSources.value = sources
-                }
-            })
-          }
-        })
-        .catch(e => console.warn('TMDB mapping failed (background):', e))
-        
-    } else {
-      if (type === 'series') {
-        data = await getSeriesById(id, signal)
-      } else {
-        data = await getMovieById(id, signal)
-      }
       
-      if (data && !signal.aborted) {
-        data.type = type
-        content.value = data
-        loadProgress()
-        saveProgress()
-        if (data.genres) trackGenreInteraction(data.genres)
-
-        // Fetch streaming sources
-        streamingSources.value = []
-        getStreamingSources(id, type).then(sources => {
-          if (!signal.aborted && content.value?.id === id) {
-             streamingSources.value = sources
-          }
-        })
-
-      }
-      loading.value = false
+      // Track Analytics
+      trackContentView(data.id, { type: data.type, title: data.title, genres: data.genres })
+      if (data.genres) trackGenreInteraction(data.genres)
     }
+    loading.value = false
   } catch (error) {
     if (error.name === 'AbortError') return
     console.error('Failed to load content:', error)
     loading.value = false
+    if (showToast) showToast('Gagal memuat konten. Silakan coba lagi.', 'error')
   }
 }
 
 function toggleWatchlist() {
   if (inWatchlist.value) {
     removeFromWatchlist(content.value.id, content.value.type)
+    if (showToast) showToast('Dihapus dari Watchlist', 'info')
   } else {
     addToWatchlist(content.value, 'watching')
+    if (showToast) showToast('Ditambahkan ke Watchlist', 'success')
   }
 }
 
@@ -570,7 +452,8 @@ function shareContent() {
   } else {
     // Fallback: Copy to clipboard
     navigator.clipboard.writeText(text).then(() => {
-      alert('Link & pesan ajakan berhasil disalin! Bagikan ke temanmu.')
+      if (showToast) showToast('Link berhasil disalin!', 'success')
+      else alert('Link berhasil disalin!')
     })
   }
 }
@@ -582,6 +465,7 @@ function goBack() {
 
 watch(selectedServer, (val) => {
   localStorage.setItem('preferred_server', val)
+  if (showToast) showToast(`Server diganti ke ${val}`, 'info')
 })
 
 watch(volume, (val) => {
@@ -808,43 +692,6 @@ watch(() => route.params, loadContent)
 .synopsis h3 { margin-bottom: 12px; font-size: 18px; color: var(--accent-primary); font-weight: 700; }
 .synopsis p { line-height: 1.8; color: var(--text-secondary); font-size: 15px; }
 
-/* Streaming Sources */
-.streaming-sources {
-  margin-bottom: 25px;
-}
-.streaming-sources h3 {
-  font-size: 16px;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-}
-.source-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.source-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: default;
-}
-
-
-.source-icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
-.ml-2 { margin-left: 6px; font-size: 10px; opacity: 0.7; }
 
 /* Skeleton Loading */
 .watch-skeleton {

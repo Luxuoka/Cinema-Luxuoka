@@ -39,6 +39,12 @@
     </div>
     <template v-else>
       <ContentSlider 
+        v-if="recommendations.length > 0"
+        title="✨ Rekomendasi Untukmu" 
+        :items="recommendations" 
+      />
+
+      <ContentSlider 
         title="Film Trending" 
         :items="trendingMovies" 
       />
@@ -55,30 +61,7 @@
         :items="trendingSeries" 
       />
 
-      <!-- Streaming Services Section -->
-      <div class="streaming-section animate-slide-up">
-        <h2 class="section-title">
-          <i class="fas fa-stream"></i> Layanan Streaming
-        </h2>
-        <div class="services-grid">
-          <router-link 
-            v-for="service in streamingServices" 
-            :key="service.id" 
-            :to="`/streaming/${service.id}`"
-            class="service-card"
-          >
-            <div class="service-logo-wrapper">
-              <img :src="service.logo" :alt="service.name" class="service-logo" />
-            </div>
-          </router-link>
-        </div>
-      </div>
-      
-      <!-- Top Anime Slider -->
-      <ContentSlider 
-        title="Anime Terpopuler" 
-        :items="animeList" 
-      />
+
     </template>
   </div>
 </template>
@@ -90,20 +73,18 @@ import HeroSection from '../components/HeroSection.vue'
 import ContentSlider from '../components/ContentSlider.vue'
 import SkeletonLoader from '../components/SkeletonLoader.vue'
 import { 
-  getTopAnime, 
   getTrendingMovies, 
   getTrendingSeries,
-  getNowPlayingMovies,
-  getStreamingServices
+  getNowPlayingMovies
 } from '../services/api'
+import { getPersonalizedRecommendations } from '../services/recommendations'
 
 const router = useRouter()
 const trendingMovies = ref([])
 const trendingSeries = ref([])
 const newReleases = ref([])
-const animeList = ref([])
 const featuredItems = ref([])
-const streamingServices = ref([])
+const recommendations = ref([])
 const initialLoading = ref(true)
 
 const continueWatchingItem = ref(null)
@@ -139,18 +120,17 @@ onMounted(async () => {
   loadContinueWatching()
   initialLoading.value = true
   try {
-    const [movies, series, newMovies, anime] = await Promise.all([
+    const [movies, series, newMovies, recs] = await Promise.all([
       getTrendingMovies(),
       getTrendingSeries(),
       getNowPlayingMovies(),
-      getTopAnime()
+      getPersonalizedRecommendations(15)
     ])
     
     trendingMovies.value = movies
     trendingSeries.value = series
     newReleases.value = newMovies
-    animeList.value = anime
-    streamingServices.value = getStreamingServices()
+    recommendations.value = recs || []
     
     const source = newMovies.length > 0 ? newMovies : movies
     featuredItems.value = source.filter(m => m.poster || m.backdrop).slice(0, 8)
@@ -258,9 +238,6 @@ onMounted(async () => {
 
 
 /* Streaming Services */
-.streaming-section {
-  margin-bottom: var(--spacing-2xl);
-}
 
 .services-grid {
   display: grid;

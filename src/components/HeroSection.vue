@@ -32,10 +32,12 @@
               <i class="fas fa-star"></i>
               {{ item.rating }}
             </span>
+            <span class="meta-divider" v-if="item.rating && item.year">|</span>
             <span v-if="item.year" class="meta-item">
               <i class="fas fa-calendar"></i>
               {{ item.year }}
             </span>
+            <span class="meta-divider" v-if="item.year && item.type">|</span>
             <span v-if="item.type" class="meta-item type">
               {{ item.type === 'series' ? 'TV SERIES' : 'MOVIE' }}
             </span>
@@ -59,10 +61,10 @@
     </div>
 
     <!-- Navigation Buttons -->
-    <button class="nav-btn prev" @click="prevSlide" v-if="displayItems.length > 1">
+    <button class="nav-btn prev" @click="prevSlide" v-if="displayItems.length > 1" aria-label="Previous slide">
       <i class="fas fa-chevron-left"></i>
     </button>
-    <button class="nav-btn next" @click="nextSlide" v-if="displayItems.length > 1">
+    <button class="nav-btn next" @click="nextSlide" v-if="displayItems.length > 1" aria-label="Next slide">
       <i class="fas fa-chevron-right"></i>
     </button>
 
@@ -73,7 +75,10 @@
         :key="index"
         :class="{ active: index === currentIndex }"
         @click="currentIndex = index"
-      ></button>
+        :aria-label="`Go to slide ${index + 1}`"
+      >
+        <span class="indicator-progress" v-if="index === currentIndex"></span>
+      </button>
     </div>
   </section>
 </template>
@@ -144,12 +149,12 @@ onUnmounted(() => {
 <style scoped>
 .hero-carousel {
   position: relative;
-  height: 550px;
+  height: 560px;
   border-radius: var(--radius-xl);
   overflow: hidden;
   margin-bottom: var(--spacing-2xl);
   background: #000;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
 }
 
 .carousel-track {
@@ -171,7 +176,7 @@ onUnmounted(() => {
   inset: -20px;
   background-size: cover;
   background-position: center;
-  filter: blur(20px) brightness(0.4);
+  filter: blur(20px) brightness(0.35);
   z-index: 0;
 }
 
@@ -179,29 +184,34 @@ onUnmounted(() => {
   position: absolute;
   right: 0;
   top: 0;
-  width: 70%;
+  width: 65%;
   height: 100%;
   background-size: cover;
   background-position: center top;
   z-index: 1;
-  mask-image: linear-gradient(to right, transparent, black 40%);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 40%);
+  mask-image: linear-gradient(to right, transparent 5%, black 45%);
+  -webkit-mask-image: linear-gradient(to right, transparent 5%, black 45%);
 }
 
+/* Stronger gradient overlay for text readability */
 .hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to right,
-    rgba(10, 10, 15, 1) 0%,
-    rgba(10, 10, 15, 0.8) 40%,
-    rgba(10, 10, 15, 0) 100%
-  ),
-  linear-gradient(
-    to top,
-    rgba(10, 10, 15, 1) 0%,
-    rgba(10, 10, 15, 0) 30%
-  );
+  background: 
+    linear-gradient(
+      to right,
+      rgba(10, 10, 15, 1) 0%,
+      rgba(10, 10, 15, 0.95) 25%,
+      rgba(10, 10, 15, 0.7) 45%,
+      rgba(10, 10, 15, 0.2) 70%,
+      rgba(10, 10, 15, 0) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(10, 10, 15, 1) 0%,
+      rgba(10, 10, 15, 0.6) 15%,
+      rgba(10, 10, 15, 0) 40%
+    );
   z-index: 2;
 }
 
@@ -224,38 +234,47 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   background: var(--accent-primary);
   color: #000;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-bottom: 20px;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(0, 212, 170, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 212, 170, 0.5); }
 }
 
 .hero__title {
   font-size: 52px;
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 15px;
-  line-height: 1.1;
+  line-height: 1.08;
   color: #fff;
   text-wrap: balance;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.7), 0 4px 30px rgba(0,0,0,0.5);
+  letter-spacing: -0.5px;
 }
 
 .hero__description {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   line-height: 1.7;
   margin-bottom: 25px;
-  font-size: 16px;
-  max-width: 500px;
+  font-size: 15px;
+  max-width: 480px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
 .hero__meta {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   margin-bottom: 30px;
 }
 
@@ -266,16 +285,24 @@ onUnmounted(() => {
   color: #fff;
   font-size: 14px;
   font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.meta-divider {
+  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+  font-weight: 300;
 }
 
 .meta-item i { color: var(--accent-primary); }
 .meta-item.rating i { color: #f1c40f; }
 
 .meta-item.type {
-  padding: 2px 8px;
-  border: 1px solid rgba(255,255,255,0.3);
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.35);
   border-radius: 4px;
   font-size: 10px;
+  letter-spacing: 1px;
 }
 
 .hero__actions {
@@ -284,30 +311,37 @@ onUnmounted(() => {
 }
 
 .hero-btn-watch {
-  padding: 12px 30px;
+  padding: 14px 34px;
   font-weight: 700;
+  font-size: 15px;
+  border-radius: 12px;
 }
 
 .hero-btn-info {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
+  padding: 14px 28px;
+  font-size: 15px;
+  border-radius: 12px;
 }
 .hero-btn-info:hover {
   background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
+/* Navigation Buttons - More visible */
 .nav-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
   color: white;
   display: flex;
   align-items: center;
@@ -315,50 +349,82 @@ onUnmounted(() => {
   cursor: pointer;
   z-index: 10;
   transition: all 0.3s;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
+  font-size: 16px;
+  opacity: 0;
 }
-.nav-btn:hover { background: var(--accent-primary); color: #000; transform: translateY(-50%) scale(1.1); }
+
+.hero-carousel:hover .nav-btn {
+  opacity: 1;
+}
+
+.nav-btn:hover { 
+  background: var(--accent-primary); 
+  color: #000; 
+  transform: translateY(-50%) scale(1.15);
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.4);
+}
 .prev { left: 20px; }
 .next { right: 20px; }
 
+/* Carousel Indicators - Enhanced with progress bar */
 .carousel-indicators {
   position: absolute;
-  bottom: 30px;
+  bottom: 28px;
   left: 60px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   z-index: 10;
 }
+
 .carousel-indicators button {
-  width: 30px;
+  width: 36px;
   height: 4px;
-  border-radius: 2px;
+  border-radius: 4px;
   border: none;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.25);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
 }
+
+.carousel-indicators button:hover {
+  background: rgba(255,255,255,0.45);
+}
+
 .carousel-indicators button.active {
+  background: rgba(255,255,255,0.2);
+  width: 56px;
+}
+
+.indicator-progress {
+  position: absolute;
+  inset: 0;
   background: var(--accent-primary);
-  width: 50px;
+  border-radius: 4px;
+  animation: indicatorFill 6s linear forwards;
+}
+
+@keyframes indicatorFill {
+  from { width: 0; }
+  to { width: 100%; }
 }
 
 @media (max-width: 1024px) {
-  .hero-main-bg { width: 100%; mask-image: none; opacity: 0.6; }
+  .hero-main-bg { width: 100%; mask-image: none; -webkit-mask-image: none; opacity: 0.5; }
   .hero__content { padding: 0 40px; }
   .hero__title { font-size: 40px; }
+  .nav-btn { opacity: 1; }
 }
 
 @media (max-width: 768px) {
-  .hero-carousel { height: 450px; border-radius: 0; margin-left: -20px; margin-right: -20px; }
+  .hero-carousel { height: 480px; border-radius: 0; margin-left: -20px; margin-right: -20px; }
   .hero__title { font-size: 32px; }
-  .hero__description { display: -webkit-box; -webkit-line-clamp: 2; font-size: 14px; }
+  .hero__description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; }
   .carousel-indicators { left: 40px; bottom: 20px; }
   .nav-btn { display: none; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  .hero__content { padding: 0 24px; }
+  .hero-btn-watch, .hero-btn-info { padding: 12px 20px; font-size: 13px; }
 }
 </style>

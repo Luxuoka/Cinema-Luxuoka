@@ -28,7 +28,7 @@
             <i class="fas fa-film"></i>
           </div>
           
-          <!-- Progress bar for series/anime -->
+          <!-- Progress bar for series -->
           <div v-if="item.totalEpisodes" class="progress-bar">
             <div 
               class="progress-fill" 
@@ -80,7 +80,7 @@
     <div v-else class="empty-state">
       <i class="fas fa-bookmark"></i>
       <h2>No items in {{ activeTab === 'all' ? 'your watchlist' : `"${activeTab}" list` }}</h2>
-      <p>Start adding movies, series, or anime to your watchlist!</p>
+      <p>Start adding movies or series to your watchlist!</p>
       <router-link to="/" class="btn btn-primary">
         <i class="fas fa-search"></i> Discover Content
       </router-link>
@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { 
   watchlist, 
   removeFromWatchlist, 
@@ -99,6 +99,7 @@ import {
 } from '../stores/userStore'
 
 const activeTab = ref('all')
+const showToast = inject('toast')
 
 const tabs = [
   { value: 'all', label: 'All', icon: 'fas fa-list' },
@@ -123,11 +124,13 @@ function getProgressWidth(item) {
 
 function handleStatusChange(item) {
   updateWatchlistStatus(item.id, item.type, item.status)
+  if (showToast) showToast(`Status diperbarui ke ${item.status}`, 'success')
 }
 
 function handleRemove(item) {
   if (confirm(`Remove "${item.title}" from watchlist?`)) {
     removeFromWatchlist(item.id, item.type)
+    if (showToast) showToast('Dihapus dari Watchlist', 'info')
   }
 }
 

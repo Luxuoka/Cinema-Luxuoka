@@ -20,6 +20,7 @@
         
         <!-- Clean Rating Badge on Poster -->
         <span v-if="item.rating" class="content-card__rating">
+          <i class="fas fa-star"></i>
           {{ formatRating(item.rating) }}
         </span>
         
@@ -99,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { isInWatchlist, addToWatchlist, removeFromWatchlist, trackGenreInteraction } from '../stores/userStore'
 
@@ -111,6 +112,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const showToast = inject('toast')
 const showPreview = ref(false)
 const alignLeft = ref(false)
 const cardRef = ref(null)
@@ -119,8 +121,6 @@ function handleMouseEnter() {
   if (cardRef.value) {
     const rect = cardRef.value.getBoundingClientRect()
     const spaceRight = window.innerWidth - rect.right
-    // Preview width is approx 300px (280px + padding/margin)
-    // If less than 320px space on right, align left
     alignLeft.value = spaceRight < 320
   }
   showPreview.value = true
@@ -128,7 +128,6 @@ function handleMouseEnter() {
 
 const typeBadge = computed(() => {
   switch (props.item.type) {
-    case 'anime': return 'Anime'
     case 'series': return 'TV'
     case 'movie': return 'Movie'
     default: return 'Movie'
@@ -138,9 +137,6 @@ const typeBadge = computed(() => {
 const inWatchlist = computed(() => {
   return isInWatchlist(props.item.id, props.item.type)
 })
-
-
-
 
 const qualityClass = computed(() => {
   const q = (props.item.quality || 'HD').toLowerCase()
@@ -162,9 +158,10 @@ function handleImageError(e) {
 function toggleWatchlist() {
   if (inWatchlist.value) {
     removeFromWatchlist(props.item.id, props.item.type)
+    if (showToast) showToast('Dihapus dari Watchlist', 'info')
   } else {
     addToWatchlist(props.item, 'planned')
-    // Track genre preference
+    if (showToast) showToast('Ditambahkan ke Watchlist', 'success')
     if (props.item.genres) {
       trackGenreInteraction(props.item.genres)
     }
@@ -180,7 +177,13 @@ function navigateToWatch() {
 .content-card {
   position: relative;
   width: 100%;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.35s;
+}
+
+.content-card:hover {
+  transform: translateY(-8px) scale(1.04);
+  z-index: 20;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s;
 }
 
 .content-card__link {
@@ -197,17 +200,22 @@ function navigateToWatch() {
   margin-bottom: var(--spacing-sm);
   background: var(--bg-tertiary);
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.35s ease;
+}
+
+.content-card:hover .content-card__poster {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 170, 0.15);
 }
 
 .content-card__poster img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .content-card:hover .content-card__poster img {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .poster-placeholder {
@@ -223,15 +231,23 @@ function navigateToWatch() {
 /* Minimalist Rating - Top Right */
 .content-card__rating {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
   color: #f1c40f;
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+}
+
+.content-card__rating i {
+  font-size: 9px;
 }
 
 /* Quality Badge */
@@ -239,7 +255,7 @@ function navigateToWatch() {
   position: absolute;
   top: 8px;
   left: 8px;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 800;
@@ -250,10 +266,10 @@ function navigateToWatch() {
 }
 
 .quality-standard {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
 .quality-gold {
@@ -261,15 +277,51 @@ function navigateToWatch() {
   color: #000;
 }
 
-/* Watchlist Indicator - Top Left (Moved or adjusted since quality is there) */
+/* Watchlist Indicator */
 .content-card__watchlist-indicator {
   position: absolute;
-  top: 30px; /* Offset below quality badge */
+  top: 32px;
   left: 8px;
   color: var(--accent-primary);
   font-size: 1.1rem;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   z-index: 5;
+}
+
+/* Overlay with play button */
+.content-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0,0,0,0.3) 40%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: var(--radius-md);
+}
+
+.content-card:hover .content-card__overlay {
+  opacity: 1;
+}
+
+.content-card__play {
+  width: 52px;
+  height: 52px;
+  background: var(--accent-red-gradient);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: scale(0.8);
+}
+
+.content-card:hover .content-card__play {
+  transform: scale(1);
 }
 
 .content-card__info {
@@ -278,12 +330,17 @@ function navigateToWatch() {
 
 .content-card__title {
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 2px;
+  font-weight: 600;
+  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-primary);
+  transition: color 0.2s;
+}
+
+.content-card:hover .content-card__title {
+  color: var(--accent-primary);
 }
 
 .content-card__meta {
@@ -302,39 +359,43 @@ function navigateToWatch() {
 /* Quick Add Button - Floating */
 .content-card__quick-add {
   position: absolute;
-  top: 8px;
+  bottom: 65px;
   right: 8px;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: #000;
-  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   cursor: pointer;
   opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.2s ease;
+  transform: translateY(5px);
+  transition: all 0.25s ease;
   z-index: 10;
 }
 
 .content-card:hover .content-card__quick-add {
   opacity: 1;
-  transform: scale(1);
+  transform: translateY(0);
 }
 
 .content-card__quick-add:hover {
   background: var(--accent-primary);
-  color: white;
+  color: #000;
+  border-color: var(--accent-primary);
+  transform: scale(1.15);
 }
 
 .content-card__quick-add.active {
   background: var(--accent-primary);
-  color: white;
+  color: #000;
   opacity: 1;
+  border-color: var(--accent-primary);
 }
 
 /* Hover Preview */
@@ -348,7 +409,7 @@ function navigateToWatch() {
   border-radius: var(--radius-lg);
   padding: var(--spacing-md);
   z-index: 100;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
   animation: fadeInRight 0.2s ease;
   margin-left: var(--spacing-sm);
 }
@@ -398,6 +459,12 @@ function navigateToWatch() {
   flex: 1;
 }
 
+.preview__badge-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .preview__rating {
   display: flex;
   align-items: center;
@@ -405,6 +472,15 @@ function navigateToWatch() {
   font-size: var(--font-xs);
   color: #f39c12;
   white-space: nowrap;
+}
+
+.preview__quality {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .preview__genres {
@@ -433,13 +509,6 @@ function navigateToWatch() {
 .preview__meta i {
   margin-right: 4px;
   color: var(--accent-primary);
-}
-
-.preview__synopsis {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: var(--spacing-md);
 }
 
 .preview__actions {
@@ -485,30 +554,33 @@ function navigateToWatch() {
   color: var(--bg-primary);
 }
 
-/* Responsive - hide preview on mobile and adjust font sizes */
+/* Responsive */
 @media (max-width: 768px) {
   .content-card__preview {
     display: none;
+  }
+  
+  .content-card:hover {
+    transform: translateY(-4px) scale(1.02);
   }
 }
 
 @media (max-width: 480px) {
   .content-card__title {
-    font-size: 13px; /* Smaller font on mobile */
+    font-size: 13px;
   }
   
   .content-card__meta {
-    font-size: 11px;
+    font-size: 10px;
   }
   
-  /* Make play button more touch friendly */
   .content-card__play {
     width: 40px;
     height: 40px;
   }
   
   .content-card__play i {
-    font-size: 1rem;
+    font-size: 14px;
   }
 }
 </style>

@@ -5,8 +5,7 @@
         <i class="fas fa-bars"></i>
       </button>
       <router-link to="/" class="logo">
-        <i class="fas fa-play-circle"></i>
-        <span>Cinema Luxuoka</span>
+        <span class="logo-text">Cinema<span class="logo-accent">Luxuoka</span></span>
       </router-link>
     </div>
 
@@ -22,92 +21,84 @@
       </router-link>
     </nav>
 
-    <div class="search-container">
-      <div 
-        class="search-bar" 
-        :class="{ focused: searchFocused, 'mobile-open': mobileSearchOpen }"
-      >
-        <i class="fas fa-search" @click="toggleMobileSearch"></i>
-        <input 
-          ref="searchInput"
-          type="text" 
-          v-model="searchQuery"
-          placeholder="Search movies, series, anime..."
-          @focus="searchFocused = true"
-          @blur="handleBlur"
-          @input="handleSearch"
-        />
-        <button v-if="searchQuery || mobileSearchOpen" class="clear-btn" @click="clearSearch">
-          <i class="fas fa-times"></i>
-        </button>
+    <div class="header-right">
+      <div class="search-container">
+        <div 
+          class="search-bar" 
+          :class="{ focused: searchFocused, 'mobile-open': mobileSearchOpen }"
+        >
+          <i class="fas fa-search" @click="toggleMobileSearch"></i>
+          <input 
+            ref="searchInput"
+            type="text" 
+            v-model="searchQuery"
+            placeholder="Search movies, series, anime..."
+            @focus="searchFocused = true"
+            @blur="handleBlur"
+            @input="handleSearch"
+          />
+          <button v-if="searchQuery || mobileSearchOpen" class="clear-btn" @click="clearSearch">
+            <i class="fas fa-times"></i>
+          </button>
 
-        <!-- Search Results Dropdown -->
-        <div v-if="showResults && (results.movies.length || results.series.length || results.anime.length)" class="search-results">
-          <div v-if="results.movies.length" class="result-section">
-            <h4><i class="fas fa-film"></i> Movies</h4>
-            <router-link 
-              v-for="item in results.movies.slice(0, 5)" 
-              :key="item.id" 
-              :to="`/watch/movie/${item.id}`"
-              class="result-item"
-              @click="clearSearch"
-            >
-              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-              <div class="result-info">
-                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                <span class="year">{{ item.year }} • Movie</span>
-              </div>
-            </router-link>
+          <!-- Search Results Dropdown -->
+          <div v-if="showResults && (results.movies.length || results.series.length)" class="search-results">
+            <div v-if="results.movies.length" class="result-section">
+              <h4><i class="fas fa-film"></i> Movies</h4>
+              <router-link 
+                v-for="item in results.movies.slice(0, 5)" 
+                :key="item.id" 
+                :to="`/watch/movie/${item.id}`"
+                class="result-item"
+                @click="clearSearch"
+              >
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                <div class="result-info">
+                  <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                  <span class="year">{{ item.year }} • Movie</span>
+                </div>
+              </router-link>
+            </div>
+
+            <div v-if="results.series.length" class="result-section">
+              <h4><i class="fas fa-tv"></i> TV Series</h4>
+              <router-link 
+                v-for="item in results.series.slice(0, 5)" 
+                :key="item.id" 
+                :to="`/watch/series/${item.id}`"
+                class="result-item"
+                @click="clearSearch"
+              >
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                <div class="result-info">
+                  <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                  <span class="year">{{ item.year }} • TV Series</span>
+                </div>
+              </router-link>
+            </div>
           </div>
 
-          <div v-if="results.series.length" class="result-section">
-            <h4><i class="fas fa-tv"></i> TV Series</h4>
-            <router-link 
-              v-for="item in results.series.slice(0, 5)" 
-              :key="item.id" 
-              :to="`/watch/series/${item.id}`"
-              class="result-item"
-              @click="clearSearch"
-            >
-              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-              <div class="result-info">
-                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                <span class="year">{{ item.year }} • TV Series</span>
-              </div>
-            </router-link>
-          </div>
-
-          <div v-if="results.anime.length" class="result-section">
-            <h4><i class="fas fa-dragon"></i> Anime</h4>
-            <router-link 
-              v-for="item in results.anime.slice(0, 5)" 
-              :key="item.id" 
-              :to="`/watch/anime/${item.id}`"
-              class="result-item"
-              @click="clearSearch"
-            >
-              <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-              <div class="result-info">
-                <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                <span class="year">{{ item.year }} • Anime</span>
-              </div>
-            </router-link>
-          </div>
-        </div>
-
-        <div v-if="showResults && searching" class="search-results spinner-overlay">
-          <div class="searching">
-            <div class="spinner-small"></div>
-            <span>Searching...</span>
+          <div v-if="showResults && searching" class="search-results spinner-overlay">
+            <div class="searching">
+              <div class="spinner-small"></div>
+              <span>Searching...</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="user-actions">
-        <button class="btn-icon theme-toggle" @click="handleThemeToggle" :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+      <div class="user-actions">
+        <router-link to="/watchlist" class="btn-icon header-icon" title="Watchlist">
+          <i class="fas fa-bookmark"></i>
+          <span v-if="watchlistCount > 0" class="action-badge">{{ watchlistCount > 9 ? '9+' : watchlistCount }}</span>
+        </router-link>
+        <button class="btn-icon header-icon theme-toggle" @click="handleThemeToggle" :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
           <i class="fas" :class="isDark ? 'fa-sun' : 'fa-moon'"></i>
         </button>
+        <router-link to="/profile" class="btn-icon header-icon profile-btn" title="Profile">
+          <i class="fas fa-user"></i>
+        </router-link>
+      </div>
     </div>
   </header>
 </template>
@@ -116,12 +107,13 @@
 import { ref, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { searchAll } from '../services/api'
-import { userProfile, toggleTheme } from '../stores/userStore'
+import { userProfile, toggleTheme, watchlist } from '../stores/userStore'
 
 const route = useRoute()
 const router = useRouter()
 
 const isDark = computed(() => userProfile.theme === 'dark')
+const watchlistCount = computed(() => watchlist.length)
 
 function handleThemeToggle() {
   toggleTheme()
@@ -129,8 +121,7 @@ function handleThemeToggle() {
 
 const tabs = [
   { path: '/movies', label: 'Movies' },
-  { path: '/series', label: 'Series' },
-  { path: '/anime', label: 'Anime' }
+  { path: '/series', label: 'Series' }
 ]
 
 const searchQuery = ref('')
@@ -138,7 +129,7 @@ const searchFocused = ref(false)
 const mobileSearchOpen = ref(false)
 const showResults = ref(false)
 const searching = ref(false)
-const results = reactive({ movies: [], series: [], anime: [] })
+const results = reactive({ movies: [], series: [] })
 const searchInput = ref(null)
 
 let searchTimeout = null
@@ -169,7 +160,6 @@ function handleSearch() {
   if (!query) {
     results.movies = []
     results.series = []
-    results.anime = []
     showResults.value = false
     return
   }
@@ -185,7 +175,6 @@ function handleSearch() {
       const data = await searchAll(query, searchAbortController.signal)
       results.movies = data.movies
       results.series = data.series
-      results.anime = data.anime
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('Search failed:', error)
@@ -193,7 +182,7 @@ function handleSearch() {
     } finally {
       searching.value = false
     }
-  }, 400) // Increased debounce slightly for stability
+  }, 400)
 }
 
 function highlightMatch(text, query) {
@@ -206,7 +195,6 @@ function clearSearch() {
   searchQuery.value = ''
   results.movies = []
   results.series = []
-  results.anime = []
   showResults.value = false
   mobileSearchOpen.value = false
 }
@@ -217,7 +205,8 @@ function clearSearch() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: 0 var(--spacing-xl);
+  height: 70px;
   background: var(--bg-secondary);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
@@ -240,41 +229,56 @@ function clearSearch() {
   font-size: var(--font-lg);
   cursor: pointer;
   padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.hamburger-btn:hover {
+  background: var(--bg-glass);
 }
 
 @media (max-width: 1024px) {
   .hamburger-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
+/* Logo */
 .logo {
+  text-decoration: none;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-xl);
-  font-weight: 700;
+}
+
+.logo-text {
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.logo-accent {
   color: var(--accent-primary);
-  text-decoration: none;
 }
 
-.logo i {
-  font-size: 1.8rem;
-}
-
-
+/* Nav Tabs */
 .nav-tabs {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 4px;
 }
 
 .nav-tab {
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 8px 18px;
   color: var(--text-secondary);
   font-weight: 500;
+  font-size: 14px;
   border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
+  transition: all 0.25s ease;
   text-decoration: none;
+  position: relative;
 }
 
 .nav-tab:hover {
@@ -287,34 +291,44 @@ function clearSearch() {
   background: rgba(0, 212, 170, 0.1);
 }
 
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: var(--accent-primary);
+  border-radius: 2px;
+}
+
+/* Header Right */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Search */
 .search-container {
   position: relative;
-  flex: 1;
-  max-width: 400px;
-  margin: 0 var(--spacing-xl);
+  flex: 0;
 }
 
 .search-bar {
+  background: transparent;
+  border: none;
+  padding: var(--spacing-sm);
+  width: 40px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  justify-content: center;
   transition: all var(--transition-normal);
 }
 
-.search-bar.focused {
-  border-color: var(--accent-primary);
-  box-shadow: var(--shadow-glow);
-}
-
-.search-bar i {
-  color: var(--text-muted);
-}
-
 .search-bar input {
+  display: none;
   flex: 1;
   background: transparent;
   color: var(--text-primary);
@@ -323,6 +337,38 @@ function clearSearch() {
 
 .search-bar input::placeholder {
   color: var(--text-muted);
+}
+
+/* Expanded state */
+.search-bar.mobile-open {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 320px;
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  z-index: 99;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-bar.mobile-open input {
+  display: block;
+}
+
+.search-bar i {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.search-bar i:hover {
+  color: var(--accent-primary);
 }
 
 .clear-btn {
@@ -341,6 +387,7 @@ function clearSearch() {
   background: var(--bg-glass);
 }
 
+/* Search Results */
 .search-results {
   position: absolute;
   top: calc(100% + var(--spacing-sm));
@@ -350,7 +397,7 @@ function clearSearch() {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
   z-index: 200;
 }
@@ -367,20 +414,21 @@ function clearSearch() {
   font-size: var(--font-xs);
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .result-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-sm) 10px;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   text-decoration: none;
 }
 
 .result-item:hover {
-  background: var(--bg-glass);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .result-item img {
@@ -415,100 +463,55 @@ function clearSearch() {
   color: var(--text-muted);
 }
 
+/* User Actions */
 .user-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 6px;
+  align-items: center;
 }
 
-.user-btn {
-  background: var(--accent-red-gradient);
-  border: none;
-}
-
-.user-btn:hover {
-  background: var(--accent-red-gradient);
-  transform: scale(1.05);
-}
-
-/* Global minimalist styles */
-.logo {
-  font-family: 'Inter', sans-serif; /* Ensure clean font */
-  font-weight: 800; /* Extra bold */
-  color: var(--text-primary); /* White text like reference */
-  font-size: 1.5rem;
-  letter-spacing: -0.5px;
-}
-
-.logo span {
-  display: block; /* Show text */
-}
-
-/* Hide icon to match text-only reference style if needed, 
-   but keeping it optional. User said "like that", reference has no icon.
-   Let's hide the icon for a perfect match. */
-.logo i {
-  display: none; 
-}
-
-.search-container {
-  margin: 0;
-  position: relative;
-  flex: 0;
-}
-
-.search-bar {
-  background: transparent;
-  border: none;
-  padding: var(--spacing-sm);
-  width: 40px;
+.header-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  transition: all var(--transition-normal);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.25s ease;
+  position: relative;
+  text-decoration: none;
+  font-size: 14px;
 }
 
-.search-bar input {
-  display: none;
+.header-icon:hover {
+  color: var(--accent-primary);
+  background: rgba(0, 212, 170, 0.08);
+  border-color: rgba(0, 212, 170, 0.15);
 }
 
-/* Expanded state for both mobile and desktop */
-.search-bar.mobile-open {
+.profile-btn:hover {
+  color: var(--accent-primary);
+}
+
+.action-badge {
   position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  width: 300px;
-  background: var(--bg-secondary);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  z-index: 99;
-  justify-content: flex-start;
-}
-
-.search-bar.mobile-open input {
-  display: block;
-}
-
-.search-bar i {
-  font-size: 1.2rem;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-@media (max-width: 768px) {
-  .nav-tabs {
-    display: none;
-  }
-  
-  .search-bar.mobile-open {
-    position: absolute;
-    top: 70px;
-    right: 0;
-    left: 0;
-    width: 100%;
-    transform: none;
-    border-radius: 0;
-    border-top: 1px solid var(--border-color);
-  }
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--accent-secondary);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
 }
 
 /* Search Highlighting */
@@ -535,5 +538,31 @@ function clearSearch() {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 var(--spacing-md);
+  }
+
+  .nav-tabs {
+    display: none;
+  }
+  
+  .search-bar.mobile-open {
+    position: fixed;
+    top: 70px;
+    right: 0;
+    left: 0;
+    width: 100%;
+    transform: none;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+  }
 }
 </style>

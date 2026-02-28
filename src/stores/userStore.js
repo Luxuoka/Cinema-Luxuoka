@@ -50,7 +50,7 @@ export function addToWatchlist(item, status = 'planned') {
     } else {
         watchlist.push({
             id: item.id,
-            type: item.type, // 'movie', 'series', 'anime'
+            type: item.type, // 'movie', 'series'
             title: item.title,
             poster: item.poster,
             rating: item.rating,
@@ -206,7 +206,6 @@ export function getUserStats() {
     const watching = watchlist.filter(w => w.status === 'watching').length
     const planned = watchlist.filter(w => w.status === 'planned').length
 
-    const animeCount = watchlist.filter(w => w.type === 'anime').length
     const movieCount = watchlist.filter(w => w.type === 'movie').length
     const seriesCount = watchlist.filter(w => w.type === 'series').length
 
@@ -215,7 +214,6 @@ export function getUserStats() {
         completed,
         watching,
         planned,
-        animeCount,
         movieCount,
         seriesCount,
         favoriteGenres: getFavoriteGenres(3),
