@@ -12,16 +12,41 @@
       ></div>
 
       <main class="main-content">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </main>
+      
       <RightSidebar :popular-items="popularItems" />
+
+      <!-- Mobile Bottom Navigation -->
+      <nav class="mobile-bottom-nav">
+        <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </router-link>
+        <router-link to="/trending" class="nav-item" :class="{ active: $route.path === '/trending' }">
+          <i class="fas fa-fire"></i>
+          <span>Trending</span>
+        </router-link>
+        <router-link to="/watchlist" class="nav-item" :class="{ active: $route.path === '/watchlist' }">
+          <i class="fas fa-bookmark"></i>
+          <span>Watchlist</span>
+        </router-link>
+        <div class="nav-item" @click="isSidebarOpen = true">
+          <i class="fas fa-bars"></i>
+          <span>Menu</span>
+        </div>
+      </nav>
     </div>
     <ToastNotification ref="toastRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, provide } from 'vue'
+import { ref, onMounted, watch, provide, onErrorCaptured } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import AppSidebar from './components/AppSidebar.vue'
@@ -33,6 +58,13 @@ const route = useRoute()
 const popularItems = ref([])
 const isSidebarOpen = ref(false)
 const toastRef = ref(null)
+
+// Error Boundary Fallback
+onErrorCaptured((err) => {
+  console.error('Captured by App.vue:', err)
+  showToast('Terjadi kesalahan sistem. Silakan muat ulang halaman.', 'error')
+  return false // block error from reaching browser console twice
+})
 
 // Provide toast method globally
 const showToast = (message, type = 'info', duration = 4000) => {
@@ -97,19 +129,66 @@ onMounted(async () => {
   pointer-events: auto;
 }
 
+/* Mobile Bottom Nav */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-color);
+  padding: 10px 0;
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.nav-item i {
+  font-size: 18px;
+}
+
+.nav-item.active {
+  color: var(--accent-primary);
+}
+
+.nav-item:active {
+  transform: scale(0.9);
+}
+
 @media (max-width: 1024px) {
   .sidebar-backdrop {
     display: block;
   }
   
   .main-content {
-    margin-left: 0; /* Reset margin for mobile */
+    margin-left: 0;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
   }
 }
 
 @media (max-width: 768px) {
   .main-content {
     padding: var(--spacing-md);
+    padding-bottom: 80px;
   }
 }
 </style>

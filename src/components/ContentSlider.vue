@@ -1,10 +1,13 @@
 <template>
   <div class="content-slider">
     <div class="slider-header">
-      <h2 class="slider-title">
-        <span class="title-accent"></span>
-        {{ title }}
-      </h2>
+      <div class="slider-title-wrapper">
+        <h2 class="slider-title">
+          <span class="title-accent"></span>
+          {{ title }}
+        </h2>
+        <span v-if="subtitle" class="slider-subtitle">{{ subtitle }}</span>
+      </div>
       <div class="slider-controls">
         <button class="control-btn" @click="scroll('left')" :disabled="isStart" aria-label="Scroll left">
           <i class="fas fa-chevron-left"></i>
@@ -35,6 +38,10 @@ const props = defineProps({
   title: {
     type: String,
     required: true
+  },
+  subtitle: {
+    type: String,
+    default: ''
   },
   items: {
     type: Array,
@@ -92,6 +99,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.slider-title-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.slider-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .title-accent {

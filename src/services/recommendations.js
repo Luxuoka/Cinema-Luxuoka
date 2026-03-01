@@ -2,7 +2,7 @@
 // Hybrid approach: Content-based + Collaborative (user behavior) + Trending
 // All client-side using localStorage data
 
-import { watchlist, watchHistory, genreStats, getFavoriteGenres } from '../stores/userStore'
+import { watchlist, genreStats, getFavoriteGenres } from '../stores/userStore'
 import {
     getTrendingMovies,
     getTrendingSeries,
@@ -59,16 +59,7 @@ export function getGenreBasedRecommendations() {
  * Based on the user's most recently watched content
  */
 export function getBecauseYouWatched() {
-    if (watchHistory.length === 0) return []
-
-    // Get the last 5 unique watched items
-    const recentItems = watchHistory.slice(0, 5)
-
-    return recentItems.map(item => ({
-        sourceTitle: item.title,
-        sourceType: item.type,
-        sourceId: item.id
-    }))
+    return [] // Feature removed
 }
 
 /**
@@ -143,12 +134,6 @@ function getTypePreference() {
     const counts = { movie: 0, series: 0 }
 
     watchlist.forEach(item => {
-        if (counts[item.type] !== undefined) {
-            counts[item.type]++
-        }
-    })
-
-    watchHistory.forEach(item => {
         if (counts[item.type] !== undefined) {
             counts[item.type]++
         }

@@ -117,60 +117,7 @@ export function getWatchlistByStatus(status) {
 
 
 
-// ============ WATCH HISTORY ============
-
-export const watchHistory = reactive(loadFromStorage('cinema_watch_history', []))
-
-// Add to watch history
-export function addToHistory(item) {
-    // Remove if already exists (to move to top)
-    const existingIndex = watchHistory.findIndex(h => h.id === item.id && h.type === item.type)
-    if (existingIndex > -1) {
-        watchHistory.splice(existingIndex, 1)
-    }
-
-    // Add to beginning
-    watchHistory.unshift({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        poster: item.poster,
-        watchedAt: new Date().toISOString()
-    })
-
-    // Keep only last 20 items
-    if (watchHistory.length > 20) {
-        watchHistory.pop()
-    }
-
-    saveToStorage('cinema_watch_history', watchHistory)
-}
-
-// Get continue watching (recent items)
-export function getContinueWatching(limit = 5) {
-    return watchHistory.slice(0, limit)
-}
-
-// ============ USER RATINGS ============
-
-export const userRatings = reactive(loadFromStorage('cinema_user_ratings', {}))
-
-// Rate content
-export function rateContent(id, type, rating, review = '') {
-    const key = `${type}_${id}`
-    userRatings[key] = {
-        rating,
-        review,
-        ratedAt: new Date().toISOString()
-    }
-    saveToStorage('cinema_user_ratings', userRatings)
-}
-
-// Get user rating
-export function getUserRating(id, type) {
-    const key = `${type}_${id}`
-    return userRatings[key] || null
-}
+// Removed History and Rating features as requested
 
 // ============ GENRE PREFERENCES ============
 
@@ -216,8 +163,7 @@ export function getUserStats() {
         planned,
         movieCount,
         seriesCount,
-        favoriteGenres: getFavoriteGenres(3),
-        historyCount: watchHistory.length
+        favoriteGenres: getFavoriteGenres(3)
     }
 }
 

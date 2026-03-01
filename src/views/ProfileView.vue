@@ -61,13 +61,6 @@
         </div>
       </div>
       
-      <div class="stat-card">
-        <div class="stat-icon history"><i class="fas fa-history"></i></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ stats.historyCount }}</span>
-          <span class="stat-label">Watched</span>
-        </div>
-      </div>
     </div>
 
     <!-- Content Breakdown -->

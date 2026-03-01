@@ -9,95 +9,171 @@
       </router-link>
     </div>
 
-    <nav class="nav-tabs">
-      <router-link 
-        v-for="tab in tabs" 
-        :key="tab.path" 
-        :to="tab.path" 
-        class="nav-tab"
-        :class="{ active: isActive(tab.path) }"
-      >
-        {{ tab.label }}
-      </router-link>
-    </nav>
+    <!-- Removed redundant nav-tabs as requested -->
+
 
     <div class="header-right">
       <div class="search-container">
         <div 
           class="search-bar" 
-          :class="{ focused: searchFocused, 'mobile-open': mobileSearchOpen }"
+          :class="{ focused: searchFocused, 'expanded': searchFocused || searchQuery }"
         >
-          <i class="fas fa-search" @click="toggleMobileSearch"></i>
+          <i class="fas fa-search" @click="expandSearch"></i>
           <input 
             ref="searchInput"
             type="text" 
             v-model="searchQuery"
-            placeholder="Search movies, series, anime..."
+            placeholder="Search movies, series..."
             @focus="searchFocused = true"
             @blur="handleBlur"
             @input="handleSearch"
           />
-          <button v-if="searchQuery || mobileSearchOpen" class="clear-btn" @click="clearSearch">
+          <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
             <i class="fas fa-times"></i>
           </button>
 
-          <!-- Search Results Dropdown -->
-          <div v-if="showResults && (results.movies.length || results.series.length)" class="search-results">
-            <div v-if="results.movies.length" class="result-section">
-              <h4><i class="fas fa-film"></i> Movies</h4>
-              <router-link 
-                v-for="item in results.movies.slice(0, 5)" 
-                :key="item.id" 
-                :to="`/watch/movie/${item.id}`"
-                class="result-item"
-                @click="clearSearch"
-              >
-                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-                <div class="result-info">
-                  <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                  <span class="year">{{ item.year }} • Movie</span>
-                </div>
-              </router-link>
+          <!-- Search Results Dropdown - Smart Suggestions -->
+          <div v-if="searchFocused" class="search-results custom-scrollbar">
+            <!-- Suggestions when empty -->
+            <div v-if="!searchQuery" class="search-suggestions">
+               <div class="suggestion-section">
+                  <h4 class="suggestion-title">Trending Now</h4>
+                  <div class="trending-list">
+                    <div v-for="(term, i) in ['Squid Game 2', 'Deadpool', 'Arcane', 'Moana 2']" :key="term" class="trending-item" @mousedown="searchQuery = term; handleSearch()">
+                      <span class="trending-rank">{{ i + 1 }}</span>
+                      <span class="trending-name">{{ term }}</span>
+                      <i class="fas fa-chart-line trending-icon"></i>
+                    </div>
+                  </div>
+               </div>
             </div>
 
-            <div v-if="results.series.length" class="result-section">
-              <h4><i class="fas fa-tv"></i> TV Series</h4>
-              <router-link 
-                v-for="item in results.series.slice(0, 5)" 
-                :key="item.id" 
-                :to="`/watch/series/${item.id}`"
-                class="result-item"
-                @click="clearSearch"
-              >
-                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-                <div class="result-info">
-                  <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                  <span class="year">{{ item.year }} • TV Series</span>
-                </div>
-              </router-link>
+            <!-- Loading State -->
+            <div v-if="searching" class="search-status">
+               <i class="fas fa-circle-notch fa-spin"></i> searching...
             </div>
-          </div>
 
-          <div v-if="showResults && searching" class="search-results spinner-overlay">
-            <div class="searching">
-              <div class="spinner-small"></div>
-              <span>Searching...</span>
-            </div>
+            <!-- Results -->
+            <template v-else-if="searchQuery">
+              <div v-if="results.movies.length" class="result-section">
+                <h4><i class="fas fa-film"></i> Movies</h4>
+                <router-link 
+                  v-for="item in results.movies.slice(0, 5)" 
+                  :key="item.id" 
+                  :to="`/watch/movie/${item.id}`"
+                  class="result-item"
+                  @click="clearSearch"
+                >
+                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                  <div class="result-info">
+                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                    <span class="year">{{ item.year }} • Movie</span>
+                  </div>
+                </router-link>
+              </div>
+
+              <div v-if="results.series.length" class="result-section">
+                <h4><i class="fas fa-tv"></i> TV Series</h4>
+                <router-link 
+                  v-for="item in results.series.slice(0, 5)" 
+                  :key="item.id" 
+                  :to="`/watch/series/${item.id}`"
+                  class="result-item"
+                  @click="clearSearch"
+                >
+                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                  <div class="result-info">
+                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                    <span class="year">{{ item.year }} • TV Series</span>
+                  </div>
+                </router-link>
+              </div>
+
+              <div v-if="!results.movies.length && !results.series.length && !searching" class="search-status">
+                No results found for "{{ searchQuery }}"
+              </div>
+            </template>
           </div>
         </div>
       </div>
 
       <div class="user-actions">
-        <router-link to="/watchlist" class="btn-icon header-icon" title="Watchlist">
-          <i class="fas fa-bookmark"></i>
-          <span v-if="watchlistCount > 0" class="action-badge">{{ watchlistCount > 9 ? '9+' : watchlistCount }}</span>
-        </router-link>
-        <button class="btn-icon header-icon theme-toggle" @click="handleThemeToggle" :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-          <i class="fas" :class="isDark ? 'fa-sun' : 'fa-moon'"></i>
+        <!-- Notifications -->
+        <div class="dropdown-wrapper">
+          <button class="btn-icon header-icon" @click="toggleMenu('notifications')" :title="`Notifications (${unreadCount})`">
+            <i class="fas fa-bell"></i>
+            <span v-if="unreadCount > 0" class="action-badge-dot"></span>
+          </button>
+          
+          <div v-if="showNotifications" class="dropdown-menu notifications-dropdown">
+            <div class="dropdown-header">
+              <h3>Notifications</h3>
+              <button class="text-link" @click="markAllRead">Mark all read</button>
+            </div>
+            <div class="notification-list custom-scrollbar">
+              <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }">
+                <div class="notif-poster" v-if="n.img">
+                  <img :src="n.img" />
+                </div>
+                <div class="notif-content">
+                  <span class="notif-title">{{ n.title }}</span>
+                  <p class="notif-body">{{ n.body }}</p>
+                  <span class="notif-time">{{ n.time }}</span>
+                </div>
+                <div class="notif-dot" v-if="!n.read"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <button class="btn-icon header-icon" @click="showSettings = !showSettings" title="Settings">
+          <i class="fas fa-cog"></i>
         </button>
-        <router-link to="/profile" class="btn-icon header-icon profile-btn" title="Profile">
-          <i class="fas fa-user"></i>
-        </router-link>
+
+        <!-- Profile -->
+        <div class="dropdown-wrapper">
+          <button class="btn-icon header-icon profile-btn" @click="toggleMenu('profile')" title="Profile">
+            <img :src="userProfile.avatar" class="avatar-small" />
+          </button>
+
+          <div v-if="showProfileDropdown" class="dropdown-menu profile-dropdown">
+            <div class="dropdown-profile-header">
+              <div class="avatar-large">{{ userProfile.username.substring(0, 2).toUpperCase() }}</div>
+              <div class="profile-meta">
+                <span class="profile-name">{{ userProfile.username }}</span>
+                <span class="profile-role">Premium Member</span>
+              </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="profile-menu-items">
+              <router-link to="/profile" class="dropdown-item" @click="closeAllDropdowns">
+                <i class="fas fa-user-circle"></i> 
+                <span>Account Settings</span>
+              </router-link>
+              
+              <div class="dropdown-item theme-item" @click="handleThemeToggle">
+                <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                <span>{{ isDark ? 'Light Mode' : 'Dark Mode' }}</span>
+                <div class="toggle-pill" :class="{ active: isDark }"></div>
+              </div>
+
+              <router-link to="/help" class="dropdown-item" @click="closeAllDropdowns">
+                <i class="fas fa-question-circle"></i> 
+                <span>Help Center</span>
+              </router-link>
+            </div>
+
+            <div class="divider"></div>
+            
+            <div class="dropdown-item logout-link" @click="logout">
+              <i class="fas fa-sign-out-alt"></i> 
+              <span>Sign Out</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -112,11 +188,56 @@ import { userProfile, toggleTheme, watchlist } from '../stores/userStore'
 const route = useRoute()
 const router = useRouter()
 
+
 const isDark = computed(() => userProfile.theme === 'dark')
 const watchlistCount = computed(() => watchlist.length)
 
+// Dropdown states
+const showNotifications = ref(false)
+const showProfileDropdown = ref(false)
+const showSettings = ref(false)
+
 function handleThemeToggle() {
   toggleTheme()
+}
+
+// Notifications dummy data
+const notifications = ref([
+  { 
+    id: 1, 
+    title: 'Baru Rilis', 
+    body: 'The Last of Us S2 E3 sudah tersedia!', 
+    time: '2 jam lalu', 
+    read: false,
+    img: 'https://image.tmdb.org/t/p/w200/uKV9nQ1Yvz48oQiv99S67UM9IlS.jpg'
+  },
+  { 
+    id: 2, 
+    title: 'Rekomendasi', 
+    body: 'Berdasarkan tontonanmu, coba "Silo"', 
+    time: '5 jam lalu', 
+    read: true,
+    img: 'https://image.tmdb.org/t/p/w200/kREwk7hcyyT99u9tT9SbpZpzdik.jpg'
+  }
+])
+
+const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+
+function markAllRead() {
+  notifications.value.forEach(n => n.read = true)
+}
+
+function handleBlur() {
+  setTimeout(() => {
+    searchFocused.value = false
+    showResults.value = false
+  }, 200)
+}
+
+function closeAllDropdowns() {
+  showNotifications.value = false
+  showProfileDropdown.value = false
+  showSettings.value = false
 }
 
 const tabs = [
@@ -135,21 +256,27 @@ const searchInput = ref(null)
 let searchTimeout = null
 let searchAbortController = null
 
+function logout() {
+  // Logic for logout
+  closeAllDropdowns()
+}
+
 function isActive(path) {
   return route.path === path || (path === '/' && route.path === '/')
 }
 
-function handleBlur() {
-  setTimeout(() => {
-    searchFocused.value = false
-    showResults.value = false
-  }, 200)
+function expandSearch() {
+  searchFocused.value = true
+  setTimeout(() => searchInput.value?.focus(), 100)
 }
 
-function toggleMobileSearch() {
-  mobileSearchOpen.value = !mobileSearchOpen.value
-  if (mobileSearchOpen.value) {
-    setTimeout(() => searchInput.value?.focus(), 100)
+function toggleMenu(menu) {
+  if (menu === 'notifications') {
+    showNotifications.value = !showNotifications.value
+    showProfileDropdown.value = false
+  } else if (menu === 'profile') {
+    showProfileDropdown.value = !showProfileDropdown.value
+    showNotifications.value = false
   }
 }
 
@@ -196,7 +323,7 @@ function clearSearch() {
   results.movies = []
   results.series = []
   showResults.value = false
-  mobileSearchOpen.value = false
+  searchFocused.value = false
 }
 </script>
 
@@ -340,24 +467,24 @@ function clearSearch() {
 }
 
 /* Expanded state */
-.search-bar.mobile-open {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  width: 320px;
-  background: var(--bg-secondary);
+.search-bar.expanded {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.05);
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  z-index: 99;
   justify-content: flex-start;
   gap: var(--spacing-sm);
-  box-shadow: var(--shadow-lg);
 }
 
-.search-bar.mobile-open input {
+.search-bar.expanded input {
   display: block;
+}
+
+.search-bar.focused {
+  border-color: var(--accent-primary);
+  background: rgba(0, 212, 170, 0.05);
+  box-shadow: 0 0 0 4px rgba(0, 212, 170, 0.1);
 }
 
 .search-bar i {
@@ -402,65 +529,70 @@ function clearSearch() {
   z-index: 200;
 }
 
-.result-section {
-  padding: var(--spacing-sm);
+/* Search Results Dropdown Content */
+.search-results :deep(.highlight) {
+  color: var(--accent-primary);
+  font-weight: 700;
 }
 
-.result-section h4 {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  font-size: var(--font-xs);
+.search-status {
+  padding: 30px;
+  text-align: center;
   color: var(--text-muted);
+  font-size: 14px;
+}
+
+.search-suggestions {
+  padding: 15px;
+}
+
+.suggestion-title {
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 15px;
+  padding-left: 5px;
 }
 
-.result-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) 10px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
-  text-decoration: none;
-}
-
-.result-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.result-item img {
-  width: 40px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.result-info {
+.trending-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-.result-info .title {
-  font-size: var(--font-sm);
+.trending-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+
+.trending-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.trending-rank {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--accent-primary);
+  width: 25px;
+  text-align: center;
+}
+
+.trending-name {
+  flex: 1;
+  font-size: 14px;
   font-weight: 500;
 }
 
-.result-info .year {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-}
-
-.searching {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xl);
-  color: var(--text-muted);
+.trending-icon {
+  font-size: 12px;
+  color: #4cd137;
+  opacity: 0.8;
 }
 
 /* User Actions */
@@ -496,22 +628,277 @@ function clearSearch() {
   color: var(--accent-primary);
 }
 
-.action-badge {
+.action-badge-dot {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 16px;
-  height: 16px;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
   background: var(--accent-secondary);
-  color: white;
-  font-size: 9px;
+  border: 2px solid var(--bg-secondary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+/* Dropdown Menu Styles */
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 15px);
+  right: 0;
+  width: 320px;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-sm);
+  z-index: 1000;
+  animation: dropdownFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dropdown-header h3 {
+  font-size: 14px;
   font-weight: 700;
-  border-radius: 10px;
+}
+
+.text-link {
+  background: transparent;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Notifications Dropdown */
+.notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.notification-item.unread {
+  background: rgba(0, 212, 170, 0.03);
+}
+
+.notif-poster {
+  width: 45px;
+  height: 65px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+}
+
+.notif-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.notif-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  box-shadow: 0 0 10px var(--accent-primary);
+}
+
+.notif-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.notif-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+  width: 260px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.dropdown-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(255,255,255,0.02);
+}
+
+.avatar-large {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
-  line-height: 1;
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: 0 0 15px rgba(0, 212, 170, 0.3);
+}
+
+.avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.profile-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-role {
+  font-size: 11px;
+  color: var(--accent-primary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0;
+}
+
+.profile-menu-items {
+  padding: 10px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  transform: translateX(5px);
+}
+
+.dropdown-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.theme-item {
+  justify-content: space-between;
+}
+
+.toggle-pill {
+  width: 36px;
+  height: 20px;
+  background: #333;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.toggle-pill::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.toggle-pill.active {
+  background: var(--accent-primary);
+}
+
+.toggle-pill.active::after {
+  transform: translateX(16px);
+  background: #000;
+}
+
+.logout-link {
+  color: #ff4757;
+  margin: 10px;
+}
+
+.logout-link:hover {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
 }
 
 /* Search Highlighting */

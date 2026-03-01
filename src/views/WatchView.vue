@@ -17,7 +17,7 @@
     <template v-else-if="content">
       <!-- Player Section -->
       <div class="player-section-wrapper">
-        <div class="player-container">
+        <div class="player-container" ref="playerContainer">
           <!-- Back Button inside player area -->
           <button @click="goBack" class="back-overlay-btn" title="Go Back">
             <i class="fas fa-arrow-left"></i>
@@ -48,6 +48,11 @@
                 <i :class="playerMode === 'trailer' ? 'fas fa-play' : 'fab fa-youtube'"></i>
                 <span>{{ playerMode === 'trailer' ? 'Tonton Film' : 'Trailer' }}</span>
               </button>
+              
+              <button class="action-btn" @click="toggleFullscreen" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+                <span>Layar Penuh</span>
+              </button>
             </div>
           </div>
           
@@ -58,6 +63,8 @@
               :src="getVideoUrl()"
               frameborder="0"
               allowfullscreen
+              webkitallowfullscreen
+              mozallowfullscreen
               allow="autoplay; fullscreen; encrypted-media"
               referrerpolicy="origin"
             ></iframe>
@@ -219,7 +226,7 @@
 import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getMovieById, getSeriesById } from '../services/api'
-import { addToHistory, addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction, updateEpisodeProgress } from '../stores/userStore'
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction, updateEpisodeProgress } from '../stores/userStore'
 import { trackContentView, trackPlayStart } from '../services/analytics'
 
 const route = useRoute()
@@ -230,6 +237,7 @@ let abortController = null
 
 const content = ref(null)
 const loading = ref(true)
+const playerContainer = ref(null)
 const playerMode = ref('stream') // 'stream' or 'trailer'
 const movieServer = ref(localStorage.getItem('preferred_movie_server') || 'vidlink')
 
@@ -352,18 +360,8 @@ function saveProgress() {
     timestamp: Date.now()
   }))
   
-  // Global last played tracker
-  localStorage.setItem('last_played', JSON.stringify({
-    id: content.value.id,
-    type: content.value.type,
-    title: content.value.title,
-    poster: content.value.poster,
-    episode: currentEpisode.value,
-    lastSeen: Date.now()
-  }))
-
+  
   updateEpisodeProgress(content.value.id, content.value.type, currentEpisode.value)
-  addToHistory(content.value)
 }
 
 function loadProgress() {
@@ -461,6 +459,18 @@ function shareContent() {
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/')
+}
+ 
+function toggleFullscreen() {
+  if (!playerContainer.value) return
+  
+  if (!document.fullscreenElement) {
+    playerContainer.value.requestFullscreen().catch(err => {
+      console.error(`Error attempting to enable full-screen mode: ${err.message}`)
+    })
+  } else {
+    document.exitFullscreen()
+  }
 }
 
 watch(selectedServer, (val) => {

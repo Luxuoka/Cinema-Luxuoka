@@ -32,14 +32,25 @@
               <i class="fas fa-star"></i>
               {{ item.rating }}
             </span>
-            <span class="meta-divider" v-if="item.rating && item.year">|</span>
+            <span class="meta-divider">|</span>
             <span v-if="item.year" class="meta-item">
               <i class="fas fa-calendar"></i>
               {{ item.year }}
             </span>
-            <span class="meta-divider" v-if="item.year && item.type">|</span>
-            <span v-if="item.type" class="meta-item type">
+            <span class="meta-divider">|</span>
+            <span class="meta-item age-rating">18+</span>
+            <span class="meta-divider">|</span>
+            <span class="meta-item type">
               {{ item.type === 'series' ? 'TV SERIES' : 'MOVIE' }}
+            </span>
+            <span class="meta-divider">|</span>
+            <span class="meta-item duration">
+              <i class="fas fa-clock"></i>
+              {{ item.type === 'series' ? 'S' + (item.seasons || 1) : (item.duration || '1h 47m') }}
+            </span>
+            <span class="meta-divider">|</span>
+            <span class="meta-item genres">
+              {{ item.genres ? (Array.isArray(item.genres) ? item.genres.slice(0, 2).join(', ') : item.genres) : 'Action, Thriller' }}
             </span>
           </div>
           
@@ -61,12 +72,12 @@
     </div>
 
     <!-- Navigation Buttons -->
-    <button class="nav-btn prev" @click="prevSlide" v-if="displayItems.length > 1" aria-label="Previous slide">
+    <div class="carousel-nav prev" @click="prevSlide" v-if="displayItems.length > 1">
       <i class="fas fa-chevron-left"></i>
-    </button>
-    <button class="nav-btn next" @click="nextSlide" v-if="displayItems.length > 1" aria-label="Next slide">
+    </div>
+    <div class="carousel-nav next" @click="nextSlide" v-if="displayItems.length > 1">
       <i class="fas fa-chevron-right"></i>
-    </button>
+    </div>
 
     <!-- Indicators -->
     <div class="carousel-indicators" v-if="displayItems.length > 1">
@@ -193,24 +204,24 @@ onUnmounted(() => {
   -webkit-mask-image: linear-gradient(to right, transparent 5%, black 45%);
 }
 
-/* Stronger gradient overlay for text readability */
+/* Improved gradient overlay for better readability and cinematic look */
 .hero__overlay {
   position: absolute;
   inset: 0;
   background: 
     linear-gradient(
-      to right,
-      rgba(10, 10, 15, 1) 0%,
-      rgba(10, 10, 15, 0.95) 25%,
-      rgba(10, 10, 15, 0.7) 45%,
-      rgba(10, 10, 15, 0.2) 70%,
-      rgba(10, 10, 15, 0) 100%
+      90deg,
+      rgba(10, 10, 10, 1) 0%,    /* Full black start */
+      rgba(10, 10, 10, 0.95) 15%,
+      rgba(10, 10, 10, 0.7) 40%,
+      rgba(10, 10, 10, 0.2) 70%,
+      transparent 100%
     ),
     linear-gradient(
       to top,
-      rgba(10, 10, 15, 1) 0%,
-      rgba(10, 10, 15, 0.6) 15%,
-      rgba(10, 10, 15, 0) 40%
+      rgba(10, 10, 10, 0.9) 0%,
+      rgba(10, 10, 10, 0.4) 20%,
+      transparent 50%
     );
   z-index: 2;
 }
@@ -332,40 +343,42 @@ onUnmounted(() => {
   transform: translateY(-2px);
 }
 
-/* Navigation Buttons - More visible */
-.nav-btn {
+/* Navigation Buttons - Premium Glassy Look */
+.carousel-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   cursor: pointer;
   z-index: 10;
-  transition: all 0.3s;
-  backdrop-filter: blur(8px);
-  font-size: 16px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
+  font-size: 18px;
 }
 
-.hero-carousel:hover .nav-btn {
+.hero-carousel:hover .carousel-nav {
   opacity: 1;
 }
 
-.nav-btn:hover { 
-  background: var(--accent-primary); 
-  color: #000; 
-  transform: translateY(-50%) scale(1.15);
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.4);
+.carousel-nav:hover {
+  background: var(--accent-primary);
+  color: #000;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 0 30px rgba(0, 212, 170, 0.4);
+  border-color: var(--accent-primary);
 }
-.prev { left: 20px; }
-.next { right: 20px; }
+
+.carousel-nav.prev { left: 30px; }
+.carousel-nav.next { right: 30px; }
 
 /* Carousel Indicators - Enhanced with progress bar */
 .carousel-indicators {

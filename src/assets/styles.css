@@ -19,9 +19,10 @@
   --primary-100: #e6fcf7;
 
   /* Background Colors */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
+  --bg-primary: #000000;
+  /* OLED black */
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #121212;
   --bg-card: rgba(26, 26, 46, 0.8);
   --bg-glass: rgba(255, 255, 255, 0.05);
   --bg-elevated: #1e1e32;
@@ -41,7 +42,6 @@
   /* Content Type Colors */
   --movie-color: #e74c3c;
   --series-color: #8b5cf6;
-  --anime-color: #f472b6;
 
   /* Text Colors */
   --text-primary: #ffffff;
@@ -553,12 +553,6 @@ h6 {
   background: rgba(139, 92, 246, 0.2);
   color: var(--series-color);
   border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.badge-anime {
-  background: rgba(244, 114, 182, 0.2);
-  color: var(--anime-color);
-  border: 1px solid rgba(244, 114, 182, 0.3);
 }
 
 /* ============================================

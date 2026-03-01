@@ -13,26 +13,53 @@
           <i class="fas fa-image"></i>
         </div>
         
-        <!-- Quality Badge -->
-        <div class="quality-badge" :class="qualityClass">
-          {{ item.quality || 'HD' }}
-        </div>
-        
-        <!-- Clean Rating Badge on Poster -->
-        <span v-if="item.rating" class="content-card__rating">
-          <i class="fas fa-star"></i>
-          {{ formatRating(item.rating) }}
-        </span>
-        
-        <!-- Watchlist indicator (subtle) -->
-        <div v-if="inWatchlist" class="content-card__watchlist-indicator">
-          <i class="fas fa-bookmark"></i>
-        </div>
-        
-        <div class="content-card__overlay">
-          <div class="content-card__play">
-            <i class="fas fa-play"></i>
+        <!-- Badges Stack - Top Left -->
+        <div class="content-card__badges">
+          <div v-if="isTrending" class="badge badge--top10">
+            <span class="top10-text">TOP</span>
+            <span class="top10-number">10</span>
           </div>
+          <div v-if="isNew" class="badge badge--new">NEW</div>
+          <div class="badge badge--quality" :class="qualityClass">
+            {{ item.quality || 'HD' }}
+          </div>
+          <div v-if="item.rating" class="badge badge--rating">
+            <i class="fas fa-star"></i>
+            {{ formatRating(item.rating) }}
+          </div>
+        </div>
+
+        <!-- Hover Overlay -->
+        <div class="content-card__overlay">
+          <div class="overlay-actions-top">
+            <button class="circle-btn" @click.stop.prevent="toggleWatchlist" :title="inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'">
+              <i :class="inWatchlist ? 'fas fa-check' : 'fas fa-plus'"></i>
+            </button>
+            <button class="circle-btn"><i class="fas fa-thumbs-up"></i></button>
+            <button class="circle-btn" @click.stop.prevent="navigateToWatch" title="More Info"><i class="fas fa-info-circle"></i></button>
+          </div>
+          
+          <div class="overlay-play" @click.stop.prevent="navigateToWatch">
+            <div class="play-icon-wrapper">
+              <i class="fas fa-play"></i>
+            </div>
+          </div>
+
+          <div class="overlay-info">
+            <div class="info-meta">
+              <span class="match-text">98% Match</span>
+              <span class="meta-age">16+</span>
+              <span>1h 47m</span>
+            </div>
+            <div class="info-genres">
+              {{ item.genres ? (Array.isArray(item.genres) ? item.genres.slice(0, 2).join(' • ') : item.genres) : 'Action • Thriller' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Bar for Continue Watching -->
+        <div v-if="item.progress" class="progress-bar-container">
+           <div class="progress-bar" :style="{ width: item.progress + '%' }"></div>
         </div>
       </div>
       
@@ -46,56 +73,6 @@
         </div>
       </div>
     </router-link>
-    
-    <!-- Quick add watchlist button (visible on hover) -->
-    <button 
-      class="content-card__quick-add" 
-      :class="{ active: inWatchlist }"
-      @click.stop.prevent="toggleWatchlist"
-      :title="inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'"
-    >
-      <i :class="inWatchlist ? 'fas fa-check' : 'fas fa-plus'"></i>
-    </button>
-    
-    <!-- Hover Preview -->
-    <div v-if="showPreview" class="content-card__preview" :class="{ 'align-left': alignLeft }">
-      <div class="preview__header">
-        <h4>{{ item.title }}</h4>
-        <div class="preview__badge-row">
-           <span class="preview__rating" v-if="item.rating">
-            <i class="fas fa-star"></i> {{ formatRating(item.rating) }}
-          </span>
-          <span class="preview__quality">HD</span>
-        </div>
-      </div>
-      
-      <div v-if="item.genres && item.genres.length" class="preview__genres">
-        <span v-for="genre in item.genres.slice(0, 3)" :key="genre" class="preview__genre">
-          {{ genre }}
-        </span>
-      </div>
-      
-      <div class="preview__meta">
-        <span v-if="item.year">{{ item.year }}</span>
-        <span v-if="item.episodes">{{ item.episodes }} Episodes</span>
-      </div>
-      
-      <div class="preview__actions">
-        <button class="preview__btn preview__btn--primary" @click.stop="navigateToWatch">
-          <i class="fas fa-play"></i>
-        </button>
-        <button 
-          class="preview__btn" 
-          :class="{ 'preview__btn--active': inWatchlist }"
-          @click.stop="toggleWatchlist"
-        >
-          <i :class="inWatchlist ? 'fas fa-check' : 'fas fa-plus'"></i>
-        </button>
-        <button class="preview__btn">
-          <i class="fas fa-thumbs-up"></i>
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -113,17 +90,15 @@ const props = defineProps({
 
 const router = useRouter()
 const showToast = inject('toast')
-const showPreview = ref(false)
-const alignLeft = ref(false)
 const cardRef = ref(null)
 
+const isTrending = computed(() => (parseFloat(props.item.rating) > 8.2))
+const isNew = computed(() => props.item.year === '2024')
+
 function handleMouseEnter() {
-  if (cardRef.value) {
-    const rect = cardRef.value.getBoundingClientRect()
-    const spaceRight = window.innerWidth - rect.right
-    alignLeft.value = spaceRight < 320
+  if (props.item.genres) {
+    trackGenreInteraction(props.item.genres)
   }
-  showPreview.value = true
 }
 
 const typeBadge = computed(() => {
@@ -228,104 +203,218 @@ function navigateToWatch() {
   font-size: 2rem;
 }
 
-/* Minimalist Rating - Top Right */
-.content-card__rating {
+/* Badges Stack */
+.content-card__badges {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  color: #f1c40f;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 5;
+  transition: transform 0.3s ease;
+}
+
+.content-card:hover .content-card__badges {
+  transform: translateY(-2px);
+}
+
+.badge {
+  padding: 4px 8px;
   border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   gap: 4px;
-  z-index: 5;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.content-card__rating i {
-  font-size: 9px;
-}
-
-/* Quality Badge */
-.quality-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 800;
-  z-index: 5;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.quality-standard {
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+.badge--quality {
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.quality-gold {
-  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+.badge--quality.quality-gold {
+  background: var(--accent-gradient);
   color: #000;
+  border: none;
 }
 
-/* Watchlist Indicator */
-.content-card__watchlist-indicator {
-  position: absolute;
-  top: 32px;
-  left: 8px;
-  color: var(--accent-primary);
-  font-size: 1.1rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-  z-index: 5;
+.badge--rating {
+  background: rgba(0, 0, 0, 0.7);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.2);
 }
 
-/* Overlay with play button */
+/* Hover Overlay System */
 .content-card__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0,0,0,0.3) 40%, transparent 70%);
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 15px;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: var(--radius-md);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 5;
 }
 
 .content-card:hover .content-card__overlay {
   opacity: 1;
 }
 
-.content-card__play {
-  width: 52px;
-  height: 52px;
-  background: var(--accent-red-gradient);
-  border-radius: var(--radius-full);
+.overlay-actions-top {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  transform: translateY(-10px);
+  transition: all 0.4s ease 0.1s;
+}
+
+.content-card:hover .overlay-actions-top {
+  transform: translateY(0);
+}
+
+.circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  transform: scale(0.8);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
 }
 
-.content-card:hover .content-card__play {
+.circle-btn:hover {
+  background: white;
+  color: black;
+  transform: scale(1.1);
+}
+
+.overlay-play {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 18px;
+  transform: scale(0.5);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.content-card:hover .play-icon-wrapper {
   transform: scale(1);
+  opacity: 1;
+}
+
+.overlay-info {
+  transform: translateY(10px);
+  transition: all 0.4s ease 0.1s;
+}
+
+.content-card:hover .overlay-info {
+  transform: translateY(0);
+}
+
+.info-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.match-text {
+  color: #4cd137;
+}
+
+.meta-age {
+  border: 1px solid rgba(255,255,255,0.5);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 9px;
+}
+
+.info-genres {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Info meta inside overlay */
+.info-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.match-text {
+  color: #4cd137;
+}
+
+.meta-age {
+  border: 1px solid rgba(255,255,255,0.5);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 9px;
+}
+
+.info-genres {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  z-index: 6;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-primary);
 }
 
 .content-card__info {
-  padding: 0 4px;
+  padding: 8px 4px;
 }
 
 .content-card__title {
@@ -356,212 +445,14 @@ function navigateToWatch() {
   opacity: 0.5;
 }
 
-/* Quick Add Button - Floating */
-.content-card__quick-add {
-  position: absolute;
-  bottom: 65px;
-  right: 8px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  cursor: pointer;
-  opacity: 0;
-  transform: translateY(5px);
-  transition: all 0.25s ease;
-  z-index: 10;
-}
-
-.content-card:hover .content-card__quick-add {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.content-card__quick-add:hover {
-  background: var(--accent-primary);
-  color: #000;
-  border-color: var(--accent-primary);
-  transform: scale(1.15);
-}
-
-.content-card__quick-add.active {
-  background: var(--accent-primary);
-  color: #000;
-  opacity: 1;
-  border-color: var(--accent-primary);
-}
-
-/* Hover Preview */
-.content-card__preview {
-  position: absolute;
-  top: 0;
-  left: 100%;
-  width: 280px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
-  z-index: 100;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-  animation: fadeInRight 0.2s ease;
-  margin-left: var(--spacing-sm);
-}
-
-.content-card__preview.align-left {
-  left: auto;
-  right: 100%;
-  margin-left: 0;
-  margin-right: var(--spacing-sm);
-  animation: fadeInLeft 0.2s ease;
-}
-
-@keyframes fadeInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes fadeInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.preview__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-sm);
-  gap: var(--spacing-sm);
-}
-
-.preview__header h4 {
-  font-size: var(--font-sm);
-  font-weight: 600;
-  margin: 0;
-  flex: 1;
-}
-
-.preview__badge-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.preview__rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-xs);
-  color: #f39c12;
-  white-space: nowrap;
-}
-
-.preview__quality {
-  font-size: 10px;
-  padding: 1px 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.preview__genres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: var(--spacing-sm);
-}
-
-.preview__genre {
-  font-size: 10px;
-  padding: 2px 8px;
-  background: var(--bg-glass);
-  border-radius: var(--radius-xl);
-  color: var(--text-secondary);
-}
-
-.preview__meta {
-  display: flex;
-  gap: var(--spacing-md);
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  margin-bottom: var(--spacing-sm);
-}
-
-.preview__meta i {
-  margin-right: 4px;
-  color: var(--accent-primary);
-}
-
-.preview__actions {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.preview__btn {
-  flex: 1;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-xs);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  transition: all var(--transition-normal);
-}
-
-.preview__btn:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-}
-
-.preview__btn--primary {
-  background: var(--accent-gradient);
-  border: none;
-  color: var(--bg-primary);
-}
-
-.preview__btn--primary:hover {
-  opacity: 0.9;
-  color: var(--bg-primary);
-}
-
-.preview__btn--active {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: var(--bg-primary);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-  .content-card__preview {
-    display: none;
-  }
-  
   .content-card:hover {
     transform: translateY(-4px) scale(1.02);
+  }
+  
+  .content-card__overlay {
+    /* Always show some overlay info on mobile/tablet? Or simplified? */
   }
 }
 
@@ -572,15 +463,6 @@ function navigateToWatch() {
   
   .content-card__meta {
     font-size: 10px;
-  }
-  
-  .content-card__play {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .content-card__play i {
-    font-size: 14px;
   }
 }
 </style>

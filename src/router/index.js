@@ -30,31 +30,7 @@ const routes = [
         name: 'series',
         component: SeriesView
     },
-    {
-        path: '/drama',
-        name: 'drama',
-        component: () => import('../views/DramaView.vue')
-    },
-    {
-        path: '/kids',
-        name: 'kids',
-        component: () => import('../views/KidsView.vue')
-    },
-    {
-        path: '/sports',
-        name: 'sports',
-        component: () => import('../views/SportsView.vue')
-    },
-    {
-        path: '/news',
-        name: 'news',
-        component: () => import('../views/NewsView.vue')
-    },
-    {
-        path: '/entertainment',
-        name: 'entertainment',
-        component: () => import('../views/EntertainmentView.vue')
-    },
+    // Extra categories removed for a cleaner, more focused experience
 
     {
         path: '/genres',

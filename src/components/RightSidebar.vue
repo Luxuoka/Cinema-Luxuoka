@@ -22,12 +22,15 @@
           </div>
           <div class="popular-info">
             <h4>{{ item.title }}</h4>
-            <p>
+            <div class="popular-meta">
               <span v-if="item.rating">
                 <i class="fas fa-star"></i> {{ item.rating }}
               </span>
-              <span v-if="item.type" class="type-badge">{{ item.type }}</span>
-            </p>
+              <div v-if="index % 3 === 0" class="trend up"><i class="fas fa-arrow-up"></i> {{ index + 1 }}</div>
+              <div v-else-if="index % 3 === 1" class="trend steady"><i class="fas fa-minus"></i></div>
+              <div v-else class="trend down"><i class="fas fa-arrow-down"></i> 1</div>
+               <span class="view-count">{{ (10.5 - index * 0.5).toFixed(1) }}M views</span>
+            </div>
           </div>
         </router-link>
       </div>
@@ -40,44 +43,12 @@
     </div> 
     -->
 
-    <!-- Continue Watching -->
-    <div class="sidebar-section">
-      <div class="section-header">
-        <h3 class="sidebar-title">
-          <i class="fas fa-history"></i>
-          Continue Watching
-        </h3>
-      </div>
-      <div class="continue-list">
-        <div v-if="continueWatchingList.length" class="preview-list">
-          <router-link 
-            v-for="item in continueWatchingList" 
-            :key="`${item.type}-${item.id}`"
-            :to="`/watch/${item.type}/${item.id}`"
-            class="preview-item"
-          >
-            <div class="preview-poster">
-              <img v-if="item.poster" :src="item.poster" :alt="item.title" loading="lazy" />
-              <div class="play-overlay"><i class="fas fa-play"></i></div>
-            </div>
-            <div class="preview-info">
-              <h4>{{ item.title }}</h4>
-              <span class="continue-text">Resume</span>
-            </div>
-          </router-link>
-        </div>
-        <div v-else class="empty-state">
-          <i class="fas fa-play-circle"></i>
-          <p>Start watching to see history</p>
-        </div>
-      </div>
-    </div>
   </aside>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { watchlist, getContinueWatching } from '../stores/userStore'
+import { watchlist } from '../stores/userStore'
 
 defineProps({
   popularItems: {
@@ -94,9 +65,6 @@ const recentWatchlist = computed(() => {
 })
 */
 
-const continueWatchingList = computed(() => {
-  return getContinueWatching(3)
-})
 </script>
 
 <style scoped>
@@ -241,25 +209,34 @@ const continueWatchingList = computed(() => {
   color: var(--text-primary);
 }
 
-.popular-info p {
+.popular-meta {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-xs);
+  font-size: 11px;
   color: var(--text-muted);
+  flex-wrap: wrap;
 }
 
-.popular-info p i {
-  color: #f39c12;
+.popular-meta i {
+  color: #f1c40f;
   font-size: 10px;
 }
 
-.type-badge {
-  padding: 2px 6px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  text-transform: uppercase;
+.trend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.trend.up { color: #2ecc71; }
+.trend.down { color: #e74c3c; }
+.trend.steady { color: var(--text-muted); }
+
+.view-count {
   font-size: 10px;
+  opacity: 0.8;
 }
 
 /* Preview List (Watchlist & Continue Watching) */
@@ -350,35 +327,57 @@ const continueWatchingList = computed(() => {
   color: var(--accent-primary);
 }
 
-/* Empty State */
-.empty-state {
+/* Modern Empty State */
+.empty-state-modern {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-lg);
-  color: var(--text-muted);
+  padding: var(--spacing-xl) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
   text-align: center;
-  background: var(--bg-glass);
-  border-radius: var(--radius-md);
 }
 
-.empty-state i {
-  font-size: 1.5rem;
-  margin-bottom: var(--spacing-sm);
-  opacity: 0.5;
+.empty-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.empty-state p {
+.empty-icon-wrapper i {
+  color: var(--text-muted);
+  font-size: 18px;
+  margin-left: 2px; /* Polish for play icon center */
+}
+
+.empty-state-modern p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.btn-browse {
+  background: var(--accent-primary);
+  color: #000;
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
   font-size: var(--font-xs);
-  margin-bottom: var(--spacing-sm);
-}
-
-.btn-text {
-  font-size: var(--font-xs);
-  color: var(--accent-primary);
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-browse:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
 }
 
 @media (max-width: 1200px) {
