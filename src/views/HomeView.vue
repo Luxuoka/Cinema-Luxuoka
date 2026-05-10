@@ -65,6 +65,11 @@
       />
 
       <ContentSlider 
+        title="Trending Anime" 
+        :items="trendingAnime" 
+      />
+
+      <ContentSlider 
         title="New Releases" 
         :items="newReleases" 
       />
@@ -91,6 +96,7 @@ import {
   discoverMovies,
   discoverSeries
 } from '../services/api'
+import { getTrendingAnime } from '../services/animeApi'
 import { getPersonalizedRecommendations } from '../services/recommendations'
 import { watchlist } from '../stores/userStore'
 import { watch } from 'vue'
@@ -98,6 +104,7 @@ import { watch } from 'vue'
 const router = useRouter()
 const trendingMovies = ref([])
 const trendingSeries = ref([])
+const trendingAnime = ref([])
 const newReleases = ref([])
 const featuredItems = ref([])
 const recommendations = ref([])
@@ -130,15 +137,17 @@ async function loadContent() {
   if (activeFilter.value === 'All') {
     initialLoading.value = true
     try {
-      const [movies, series, newMovies, recs] = await Promise.all([
+      const [movies, series, anime, newMovies, recs] = await Promise.all([
         getTrendingMovies(),
         getTrendingSeries(),
+        getTrendingAnime(15),
         getNowPlayingMovies(),
         getPersonalizedRecommendations(15)
       ])
       
       trendingMovies.value = movies
       trendingSeries.value = series
+      trendingAnime.value = anime
       newReleases.value = newMovies
       recommendations.value = recs || []
       

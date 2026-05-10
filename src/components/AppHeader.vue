@@ -89,7 +89,24 @@
                 </router-link>
               </div>
 
-              <div v-if="!results.movies.length && !results.series.length && !searching" class="search-status">
+              <div v-if="results.anime && results.anime.length" class="result-section">
+                <h4><i class="fas fa-torii-gate" style="color:#C44FE0"></i> Anime</h4>
+                <router-link 
+                  v-for="item in results.anime.slice(0, 5)" 
+                  :key="item.id" 
+                  :to="`/watch/anime/${item.id}`"
+                  class="result-item"
+                  @click="clearSearch"
+                >
+                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                  <div class="result-info">
+                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
+                    <span class="year">{{ item.year }} • Anime</span>
+                  </div>
+                </router-link>
+              </div>
+
+              <div v-if="!results.movies.length && !results.series.length && (!results.anime || !results.anime.length) && !searching" class="search-status">
                 No results found for "{{ searchQuery }}"
               </div>
             </template>
@@ -97,84 +114,6 @@
         </div>
       </div>
 
-      <div class="user-actions">
-        <!-- Notifications -->
-        <div class="dropdown-wrapper">
-          <button class="btn-icon header-icon" @click="toggleMenu('notifications')" :title="`Notifications (${unreadCount})`">
-            <i class="fas fa-bell"></i>
-            <span v-if="unreadCount > 0" class="action-badge-dot"></span>
-          </button>
-          
-          <div v-if="showNotifications" class="dropdown-menu notifications-dropdown">
-            <div class="dropdown-header">
-              <h3>Notifications</h3>
-              <button class="text-link" @click="markAllRead">Mark all read</button>
-            </div>
-            <div class="notification-list custom-scrollbar">
-              <div v-for="n in notifications" :key="n.id" class="notification-item" :class="{ unread: !n.read }">
-                <div class="notif-poster" v-if="n.img">
-                  <img :src="n.img" />
-                </div>
-                <div class="notif-content">
-                  <span class="notif-title">{{ n.title }}</span>
-                  <p class="notif-body">{{ n.body }}</p>
-                  <span class="notif-time">{{ n.time }}</span>
-                </div>
-                <div class="notif-dot" v-if="!n.read"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Settings -->
-        <button class="btn-icon header-icon" @click="showSettings = !showSettings" title="Settings">
-          <i class="fas fa-cog"></i>
-        </button>
-
-        <!-- Profile -->
-        <div class="dropdown-wrapper">
-          <button class="btn-icon header-icon profile-btn" @click="toggleMenu('profile')" title="Profile">
-            <img :src="userProfile.avatar" class="avatar-small" />
-          </button>
-
-          <div v-if="showProfileDropdown" class="dropdown-menu profile-dropdown">
-            <div class="dropdown-profile-header">
-              <div class="avatar-large">{{ userProfile.username.substring(0, 2).toUpperCase() }}</div>
-              <div class="profile-meta">
-                <span class="profile-name">{{ userProfile.username }}</span>
-                <span class="profile-role">Premium Member</span>
-              </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="profile-menu-items">
-              <router-link to="/profile" class="dropdown-item" @click="closeAllDropdowns">
-                <i class="fas fa-user-circle"></i> 
-                <span>Account Settings</span>
-              </router-link>
-              
-              <div class="dropdown-item theme-item" @click="handleThemeToggle">
-                <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
-                <span>{{ isDark ? 'Light Mode' : 'Dark Mode' }}</span>
-                <div class="toggle-pill" :class="{ active: isDark }"></div>
-              </div>
-
-              <router-link to="/help" class="dropdown-item" @click="closeAllDropdowns">
-                <i class="fas fa-question-circle"></i> 
-                <span>Help Center</span>
-              </router-link>
-            </div>
-
-            <div class="divider"></div>
-            
-            <div class="dropdown-item logout-link" @click="logout">
-              <i class="fas fa-sign-out-alt"></i> 
-              <span>Sign Out</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </header>
 </template>
@@ -250,7 +189,7 @@ const searchFocused = ref(false)
 const mobileSearchOpen = ref(false)
 const showResults = ref(false)
 const searching = ref(false)
-const results = reactive({ movies: [], series: [] })
+const results = reactive({ movies: [], series: [], anime: [] })
 const searchInput = ref(null)
 
 let searchTimeout = null
@@ -300,8 +239,9 @@ function handleSearch() {
     
     try {
       const data = await searchAll(query, searchAbortController.signal)
-      results.movies = data.movies
-      results.series = data.series
+      results.movies = data.movies || []
+      results.series = data.series || []
+      results.anime = data.anime || []
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('Search failed:', error)
@@ -322,6 +262,7 @@ function clearSearch() {
   searchQuery.value = ''
   results.movies = []
   results.series = []
+  results.anime = []
   showResults.value = false
   searchFocused.value = false
 }

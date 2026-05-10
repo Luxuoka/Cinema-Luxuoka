@@ -69,7 +69,7 @@
         <div class="content-card__meta">
           <span v-if="item.year">{{ item.year }}</span>
           <span class="meta-dot">•</span>
-          <span class="meta-type">{{ typeBadge }}</span>
+          <span class="meta-type" :class="{ 'anime-type': item.type === 'anime' }">{{ typeBadge }}</span>
         </div>
       </div>
     </router-link>
@@ -104,6 +104,7 @@ function handleMouseEnter() {
 const typeBadge = computed(() => {
   switch (props.item.type) {
     case 'series': return 'TV'
+    case 'anime': return 'Anime'
     case 'movie': return 'Movie'
     default: return 'Movie'
   }
@@ -443,6 +444,11 @@ function navigateToWatch() {
 .meta-dot {
   font-size: 8px;
   opacity: 0.5;
+}
+
+.anime-type {
+  color: #C44FE0;
+  font-weight: 700;
 }
 
 /* Responsive */

@@ -313,11 +313,17 @@ export async function getSeriesById(id, signal = null) {
 
 // Search all types
 export async function searchAll(query, signal = null) {
-  const [movies, series] = await Promise.all([
+  // We'll dynamically import the anime service to avoid circular dependencies if any,
+  // or just import it at the top. For simplicity, we can fetch it directly here
+  // but it's cleaner to use the animeApi if we want consistent formatting.
+  const { searchAnime } = await import('./animeApi.js');
+  
+  const [movies, series, anime] = await Promise.all([
     searchMovies(query, signal).catch(() => []),
-    searchSeries(query, signal).catch(() => [])
+    searchSeries(query, signal).catch(() => []),
+    searchAnime(query, 20, signal).catch(() => [])
   ]);
-  return { movies, series };
+  return { movies, series, anime };
 }
 
 // Get TMDB series seasons

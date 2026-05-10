@@ -27,7 +27,10 @@
         <i class="fas fa-tv"></i>
         <span>TV Shows</span>
       </router-link>
-
+      <router-link to="/anime" class="sidebar-item" :class="{ active: $route.path === '/anime' }">
+        <i class="fas fa-torii-gate" style="color: #FF6B9D;"></i>
+        <span>Anime</span>
+      </router-link>
     </div>
 
 

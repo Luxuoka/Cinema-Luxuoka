@@ -7,6 +7,8 @@ import WatchlistView from '../views/WatchlistView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import GenreView from '../views/GenreView.vue'
 import TrendingView from '../views/TrendingView.vue'
+import AnimeView from '../views/AnimeView.vue'
+import AnimeDetailView from '../views/AnimeDetailView.vue'
 
 const routes = [
     {
@@ -51,6 +53,17 @@ const routes = [
         path: '/watch/:type/:id',
         name: 'watch',
         component: WatchView,
+        props: true
+    },
+    {
+        path: '/anime',
+        name: 'anime',
+        component: AnimeView
+    },
+    {
+        path: '/watch/anime/:id',
+        name: 'watch-anime',
+        component: AnimeDetailView,
         props: true
     },
     {
