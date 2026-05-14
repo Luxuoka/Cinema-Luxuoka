@@ -35,16 +35,38 @@ export const allProfiles = reactive([])
 export const notifications = reactive([])
 let notifUnsubscribe = null
 
+// ============ LOCAL REHYDRATION ============
+
+function loadLocalData(key) {
+    try {
+        const saved = localStorage.getItem(key)
+        return saved ? JSON.parse(saved) : []
+    } catch (e) {
+        return []
+    }
+}
+
+function saveLocalData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data))
+}
+
+// Rehydrate instantly before Firebase even starts (Guest rehydration removed as requested)
+
 // Listen to Firebase Auth state
 if (auth) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            userState.isLoggedIn = true
             userState.uid = user.uid
             userProfile.username = user.displayName || 'User'
             userProfile.email = user.email || ''
             userProfile.avatar = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`
             
+            // Load account-specific cache from localStorage first for instant UI
+            const cachedWatchlist = loadLocalData(`cache_watchlist_${user.uid}`)
+            const cachedHistory = loadLocalData(`cache_history_${user.uid}`)
+            if (cachedWatchlist.length) watchlist.splice(0, watchlist.length, ...cachedWatchlist)
+            if (cachedHistory.length) watchHistory.splice(0, watchHistory.length, ...cachedHistory)
+
             // Fetch user preferences from Firestore
             if (db) {
                 const userRef = doc(db, 'users', user.uid)
@@ -57,16 +79,6 @@ if (auth) {
                     }
                     if (data.profiles) {
                         allProfiles.splice(0, allProfiles.length, ...data.profiles)
-                    } else {
-                        // Create initial default profile
-                        const defaultProfile = {
-                            id: 'main',
-                            name: user.displayName || 'User',
-                            avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`,
-                            favoriteGenres: []
-                        }
-                        allProfiles.splice(0, allProfiles.length, defaultProfile)
-                        await updateDoc(userRef, { profiles: [defaultProfile] })
                     }
                 } else {
                     // Create new user profile in DB
@@ -89,19 +101,21 @@ if (auth) {
                 // Set initial profile
                 const savedProfileId = localStorage.getItem(`profile_${user.uid}`) || 'main'
                 const profile = allProfiles.find(p => p.id === savedProfileId) || allProfiles[0]
-                selectProfile(profile)
                 
+                // IMPORTANT: Login state ONLY set after profile selection to avoid race conditions
+                userState.isLoggedIn = true 
+                selectProfile(profile)
                 initNotifListener(user.uid)
             }
-        } else {
             // User is signed out
             userState.isLoggedIn = false
             userState.uid = null
             userProfile.username = 'Guest User'
             userProfile.email = ''
             userProfile.avatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest'
-            watchlist.splice(0, watchlist.length)
-            watchHistory.splice(0, watchHistory.length)
+            
+            // Note: Watchlist and History are NOT cleared on logout per user request
+            
             allProfiles.splice(0, allProfiles.length)
             notifications.splice(0, notifications.length)
             clearProfile()
@@ -109,7 +123,6 @@ if (auth) {
         userState.loading = false
     })
 } else {
-    // Firebase is not configured, fallback or mock state
     userState.loading = false
 }
 
@@ -213,14 +226,20 @@ export async function deleteProfile(profileId) {
     }
 }
 
+let lastWatchlistWrite = 0
+
 function initWatchlistListener(uid, profileId) {
     if (watchlistUnsubscribe) watchlistUnsubscribe()
     const watchlistRef = doc(db, 'watchlists', `${uid}_${profileId}`)
     
     watchlistUnsubscribe = onSnapshot(watchlistRef, (docSnap) => {
+        // Prevent snapshot from overwriting optimistic local updates for 2 seconds
+        if (Date.now() - lastWatchlistWrite < 2000) return
+
         if (docSnap.exists()) {
             const data = docSnap.data().items || []
             watchlist.splice(0, watchlist.length, ...data)
+            saveLocalData(`cache_watchlist_${uid}`, data)
         } else {
             setDoc(watchlistRef, { items: [] })
         }
@@ -233,27 +252,34 @@ export async function addToWatchlist(item, status = 'planned') {
     const existingIndex = watchlist.findIndex(w => w.id === item.id && w.type === item.type)
     const newList = [...watchlist]
     
+    const watchlistItem = {
+        id: item.id,
+        type: item.type || 'movie',
+        title: item.title || item.name,
+        poster: item.poster || item.poster_path,
+        rating: item.rating,
+        year: item.year,
+        status: status,
+        currentEpisode: 0,
+        totalEpisodes: item.episodes || item.seasons || null,
+        addedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    }
+
     if (existingIndex > -1) {
         newList[existingIndex].status = status
-        newList[existingIndex].updatedAt = new Date().toISOString()
+        newList[existingIndex].updatedAt = watchlistItem.updatedAt
     } else {
-        newList.push({
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            poster: item.poster,
-            rating: item.rating,
-            year: item.year,
-            status: status,
-            currentEpisode: 0,
-            totalEpisodes: item.episodes || item.seasons || null,
-            addedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        })
+        newList.push(watchlistItem)
     }
     
+    // Optimistic Update
+    lastWatchlistWrite = Date.now()
+    watchlist.splice(0, watchlist.length, ...newList)
+
     const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
     await setDoc(watchlistRef, { items: newList })
+    saveLocalData(`cache_watchlist_${userState.uid}`, newList)
 }
 
 export async function removeFromWatchlist(id, type) {
@@ -299,8 +325,13 @@ export async function updateEpisodeProgress(id, type, episode) {
         } else if (episode > 0 && item.status === 'planned') {
             item.status = 'watching'
         }
+        
+        // Optimistic Update
+        watchlist.splice(0, watchlist.length, ...newList)
+
         const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
         await setDoc(watchlistRef, { items: newList })
+        saveLocalData(`cache_watchlist_${userState.uid}`, newList)
     }
 }
 
@@ -317,8 +348,13 @@ export async function toggleEpisodeWatched(id, type, episode) {
             item.watchedEpisodes.push(episode)
         }
         item.updatedAt = new Date().toISOString()
+        
+        // Optimistic Update
+        watchlist.splice(0, watchlist.length, ...newList)
+
         const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
         await setDoc(watchlistRef, { items: newList })
+        saveLocalData(`cache_watchlist_${userState.uid}`, newList)
     }
 }
 
@@ -332,6 +368,8 @@ export function getWatchlistByStatus(status) {
 export const watchHistory = reactive([])
 let historyUnsubscribe = null
 
+let lastHistoryWrite = 0
+
 function initHistoryListener(uid, profileId) {
     if (historyUnsubscribe) historyUnsubscribe()
     if (!db) return
@@ -340,10 +378,13 @@ function initHistoryListener(uid, profileId) {
     const historyRef = doc(db, 'history', `${uid}_${profileId}`)
     
     historyUnsubscribe = onSnapshot(historyRef, (docSnap) => {
+        if (Date.now() - lastHistoryWrite < 2000) return
+
         if (docSnap.exists()) {
             const data = docSnap.data().items || []
             data.sort((a, b) => new Date(b.watchedAt) - new Date(a.watchedAt))
             watchHistory.splice(0, watchHistory.length, ...data)
+            saveLocalData(`cache_history_${uid}`, data)
         } else {
             setDoc(historyRef, { items: [] })
         }
@@ -374,14 +415,15 @@ export async function addToHistory(item, episode = null) {
     }
     
     newList.unshift(historyItem)
-    
     if (newList.length > 50) newList.pop()
     
-    // Optimistic local update for better UX
+    // Optimistic local update
+    lastHistoryWrite = Date.now()
     watchHistory.splice(0, watchHistory.length, ...newList)
     
     const historyRef = doc(db, 'history', `${userState.uid}_${currentProfile.id}`)
     await setDoc(historyRef, { items: newList })
+    saveLocalData(`cache_history_${userState.uid}`, newList)
 }
 
 // ============ RATINGS & REVIEWS ============

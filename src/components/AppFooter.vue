@@ -4,13 +4,14 @@
       <!-- BRAND -->
       <div class="footer-brand">
         <div class="footer-logo">Cinema<span>Luxuoka</span></div>
-        <p>Platform streaming premium dengan ribuan konten terbaik dari seluruh dunia. Nikmati tanpa batas.</p>
+        <p>Platform streaming kualitas premium dengan ribuan konten terbaik dari seluruh dunia. Nikmati tanpa batas.</p>
         <div class="social-row">
-          <a class="social-icon" href="#" title="Twitter / X" @click.prevent="toast('🐦 Twitter / X')">𝕏</a>
-          <a class="social-icon" href="#" title="Facebook" @click.prevent="toast('📘 Facebook')">f</a>
-          <a class="social-icon" href="https://www.instagram.com/" target="_blank" title="Instagram">📸</a>
-          <a class="social-icon" href="https://wa.me/6281806080731" target="_blank" title="WhatsApp">💬</a>
-          <a class="social-icon" href="#" title="YouTube" @click.prevent="toast('▶️ YouTube')">▶</a>
+          <a class="social-icon" href="https://instagram.com/luxuoka" target="_blank" title="Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a class="social-icon" href="https://wa.me/6281806080731" target="_blank" title="WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </a>
         </div>
       </div>
 
@@ -18,30 +19,29 @@
       <div>
         <div class="footer-heading">Navigasi</div>
         <ul class="footer-links">
-          <li><router-link to="/">Home</router-link></li>
-          <li><router-link to="/trending">Trending</router-link></li>
-          <li><router-link to="/movies">Movies</router-link></li>
-          <li><router-link to="/series">TV Shows</router-link></li>
-          <li><router-link to="/anime">Anime</router-link></li>
-          <li><router-link to="/watchlist">Watchlist</router-link></li>
+          <li><router-link to="/"><i class="fas fa-house footer-icon-fa"></i> Home</router-link></li>
+          <li><router-link to="/trending"><i class="fas fa-rocket footer-icon-fa"></i> Trending</router-link></li>
+          <li><router-link to="/movies"><i class="fas fa-clapperboard footer-icon-fa"></i> Movies</router-link></li>
+          <li><router-link to="/series"><i class="fas fa-tv footer-icon-fa"></i> TV Shows</router-link></li>
+          <li><router-link to="/anime"><i class="fab fa-bilibili footer-icon-fa"></i> Anime</router-link></li>
+          <li><router-link to="/watchlist"><i class="fas fa-bookmark footer-icon-fa"></i> Watchlist</router-link></li>
         </ul>
       </div>
-
-
 
       <!-- INFO -->
       <div>
         <div class="footer-heading">Info</div>
         <ul class="footer-links">
-          <li><a @click.prevent="toast('ℹ️ Tentang CinemaLuxuoka')">Tentang Kami</a></li>
-          <li><a @click.prevent="toast('🔒 Kebijakan Privasi')">Kebijakan Privasi</a></li>
-          <li><a @click.prevent="toast('📋 Syarat & Ketentuan')">Syarat & Ketentuan</a></li>
-          <li><a @click.prevent="toast('❓ FAQ')">FAQ</a></li>
-          <li><a @click.prevent="toast('✉️ Hubungi kami')">Hubungi Kami</a></li>
+          <li><router-link to="/about">Tentang Kami</router-link></li>
+          <li><router-link to="/privacy">Kebijakan Privasi</router-link></li>
+          <li><router-link to="/terms">Syarat & Ketentuan</router-link></li>
+          <li><router-link to="/faq">FAQ</router-link></li>
+          <li><router-link to="/contact">Hubungi Kami</router-link></li>
           <li>
-            <a href="https://wa.me/6281806080731?text=Halo%20Admin,%20tolong%20upload%20film%20[Judul]%20tahun%20[Tahun],%20terima%20kasih." target="_blank">
+            <router-link to="/request">
+              <i class="fab fa-whatsapp footer-icon-fa" style="color:#25D366"></i> 
               Request Movie
-            </a>
+            </router-link>
           </li>
         </ul>
       </div>
@@ -50,10 +50,6 @@
     <!-- FOOTER BOTTOM -->
     <div class="footer-bottom">
       <div class="footer-copy">© 2026 CinemaLuxuoka. All rights reserved.</div>
-      <div class="footer-langs">
-        <button class="lang-btn active">🇮🇩 ID</button>
-        <button class="lang-btn" @click="toast('🌐 English version coming soon!')">🇬🇧 EN</button>
-      </div>
     </div>
   </footer>
 </template>
@@ -160,6 +156,13 @@ function toast(msg) {
 .footer-links a:hover,
 .footer-links li a:hover {
   color: var(--text);
+}
+
+.footer-icon-fa {
+  width: 18px;
+  margin-right: 6px;
+  font-size: 14px;
+  text-align: center;
 }
 
 /* BOTTOM */

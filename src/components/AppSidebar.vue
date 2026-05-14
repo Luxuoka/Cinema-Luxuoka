@@ -9,31 +9,22 @@
     <!-- MENU -->
     <div class="sidebar-section-label">Menu</div>
     <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-        <polyline points="9,22 9,12 15,12 15,22"/>
-      </svg>
+      <i class="fas fa-house nav-icon-fa"></i>
       Home
     </router-link>
     <router-link to="/trending" class="nav-item" :class="{ active: $route.path === '/trending' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
-      </svg>
+      <i class="fas fa-rocket nav-icon-fa"></i>
       Trending
       <span class="nav-badge">Hot</span>
     </router-link>
     <router-link to="/watchlist" class="nav-item" :class="{ active: $route.path === '/watchlist' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-      </svg>
+      <i class="fas fa-bookmark nav-icon-fa"></i>
       Watchlist
       <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
       <span v-else-if="watchlistCount > 0" class="nav-badge nav-badge--count">{{ watchlistCount }}</span>
     </router-link>
     <router-link v-if="userState?.isLoggedIn" to="/history" class="nav-item" :class="{ active: $route.path === '/history' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
+      <i class="fas fa-history nav-icon-fa"></i>
       History
     </router-link>
     <div v-else class="sidebar-login-tip">
@@ -44,31 +35,16 @@
     <!-- KATEGORI -->
     <div class="sidebar-section-label">Kategori</div>
     <router-link to="/movies" class="nav-item" :class="{ active: $route.path === '/movies' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
-        <line x1="7" y1="2" x2="7" y2="22"/>
-        <line x1="17" y1="2" x2="17" y2="22"/>
-        <line x1="2" y1="12" x2="22" y2="12"/>
-        <line x1="2" y1="7" x2="7" y2="7"/>
-        <line x1="2" y1="17" x2="7" y2="17"/>
-        <line x1="17" y1="17" x2="22" y2="17"/>
-        <line x1="17" y1="7" x2="22" y2="7"/>
-      </svg>
+      <i class="fas fa-clapperboard nav-icon-fa"></i>
       Movies
     </router-link>
     <router-link to="/series" class="nav-item" :class="{ active: $route.path === '/series' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-      </svg>
+      <i class="fas fa-tv nav-icon-fa"></i>
       TV Shows
       <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
     </router-link>
     <router-link to="/anime" class="nav-item" :class="{ active: $route.path === '/anime' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-      </svg>
+      <i class="fab fa-bilibili nav-icon-fa"></i>
       Anime
       <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
     </router-link>
@@ -80,17 +56,11 @@
       target="_blank"
       class="nav-item"
     >
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
+      <i class="fab fa-whatsapp nav-icon-fa" style="color:#25D366"></i>
       Request Movie
     </a>
     <router-link v-if="userState?.isLoggedIn" to="/admin" class="nav-item" :class="{ active: $route.path === '/admin' }">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 11V7a4 4 0 10-8 0v4M5 11h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z"/>
-      </svg>
+      <i class="fas fa-user-shield nav-icon-fa"></i>
       Admin Panel
     </router-link>
   </aside>
@@ -214,8 +184,19 @@ const watchlistCount = computed(() => watchlist.length)
   opacity: 0.7;
 }
 
+.nav-icon-fa {
+  width: 18px;
+  font-size: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
 .nav-item.active .nav-icon,
-.nav-item:hover .nav-icon {
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon-fa,
+.nav-item:hover .nav-icon-fa {
   opacity: 1;
 }
 

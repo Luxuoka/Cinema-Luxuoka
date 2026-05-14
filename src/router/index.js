@@ -13,6 +13,12 @@ import HistoryView from '../views/HistoryView.vue'
 import ProfileSelectionView from '../views/ProfileSelectionView.vue'
 import AdminView from '../views/AdminView.vue'
 import LoginRequiredView from '../views/LoginRequiredView.vue'
+import AboutView from '../views/AboutView.vue'
+import PrivacyView from '../views/PrivacyView.vue'
+import TermsView from '../views/TermsView.vue'
+import FAQView from '../views/FAQView.vue'
+import ContactView from '../views/ContactView.vue'
+import RequestView from '../views/RequestView.vue'
 import { userState } from '../stores/userStore'
 
 const routes = [
@@ -94,6 +100,36 @@ const routes = [
         path: '/login-required',
         name: 'login-required',
         component: LoginRequiredView
+    },
+    {
+        path: '/about',
+        name: 'about',
+        component: AboutView
+    },
+    {
+        path: '/privacy',
+        name: 'privacy',
+        component: PrivacyView
+    },
+    {
+        path: '/terms',
+        name: 'terms',
+        component: TermsView
+    },
+    {
+        path: '/faq',
+        name: 'faq',
+        component: FAQView
+    },
+    {
+        path: '/contact',
+        name: 'contact',
+        component: ContactView
+    },
+    {
+        path: '/request',
+        name: 'request',
+        component: RequestView
     },
     {
         path: '/:pathMatch(.*)*',

@@ -35,10 +35,10 @@ export default defineConfig({
             params: {
               overrides: {
                 cleanupNumericValues: false,
-                removeViewBox: false,
               },
             },
           },
+          'removeViewBox',
           'sortAttrs',
           {
             name: 'addAttributesToSVGElement',
