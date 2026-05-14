@@ -61,13 +61,7 @@ if (auth) {
             userProfile.email = user.email || ''
             userProfile.avatar = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`
             
-            // Load account-specific cache from localStorage first for instant UI
-            const cachedWatchlist = loadLocalData(`cache_watchlist_${user.uid}`)
-            const cachedHistory = loadLocalData(`cache_history_${user.uid}`)
-            if (cachedWatchlist.length) watchlist.splice(0, watchlist.length, ...cachedWatchlist)
-            if (cachedHistory.length) watchHistory.splice(0, watchHistory.length, ...cachedHistory)
-
-            // Fetch user preferences from Firestore
+            // Load global user preferences from Firestore
             if (db) {
                 const userRef = doc(db, 'users', user.uid)
                 const docSnap = await getDoc(userRef)
@@ -164,6 +158,12 @@ export function selectProfile(profile) {
     currentProfile.favoriteGenres = profile.favoriteGenres || []
     
     localStorage.setItem(`profile_${userState.uid}`, profile.id)
+
+    // Load profile-specific cache for instant UI
+    const cachedWatchlist = loadLocalData(`cache_watchlist_${userState.uid}_${profile.id}`)
+    const cachedHistory = loadLocalData(`cache_history_${userState.uid}_${profile.id}`)
+    if (cachedWatchlist.length) watchlist.splice(0, watchlist.length, ...cachedWatchlist)
+    if (cachedHistory.length) watchHistory.splice(0, watchHistory.length, ...cachedHistory)
     
     // Initialize real-time listeners for Watchlist and History for THIS profile
     initWatchlistListener(userState.uid, profile.id)
@@ -240,10 +240,16 @@ function initWatchlistListener(uid, profileId) {
         if (docSnap.exists()) {
             const data = docSnap.data().items || []
             watchlist.splice(0, watchlist.length, ...data)
-            saveLocalData(`cache_watchlist_${uid}`, data)
+            saveLocalData(`cache_watchlist_${uid}_${profileId}`, data)
         } else {
-            setDoc(watchlistRef, { items: [] })
+            // If doc doesn't exist, only clear if we are sure (no recent writes)
+            if (watchlist.length > 0 && Date.now() - lastWatchlistWrite > 5000) {
+                watchlist.splice(0, watchlist.length)
+                saveLocalData(`cache_watchlist_${uid}_${profileId}`, [])
+            }
         }
+    }, (err) => {
+        console.error("Watchlist listener error:", err)
     })
 }
 
@@ -280,7 +286,7 @@ export async function addToWatchlist(item, status = 'planned') {
 
     const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
     await setDoc(watchlistRef, { items: newList })
-    saveLocalData(`cache_watchlist_${userState.uid}`, newList)
+    saveLocalData(`cache_watchlist_${userState.uid}_${currentProfile.id}`, newList)
 }
 
 export async function removeFromWatchlist(id, type) {
@@ -332,7 +338,7 @@ export async function updateEpisodeProgress(id, type, episode) {
 
         const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
         await setDoc(watchlistRef, { items: newList })
-        saveLocalData(`cache_watchlist_${userState.uid}`, newList)
+        saveLocalData(`cache_watchlist_${userState.uid}_${currentProfile.id}`, newList)
     }
 }
 
@@ -355,7 +361,7 @@ export async function toggleEpisodeWatched(id, type, episode) {
 
         const watchlistRef = doc(db, 'watchlists', `${userState.uid}_${currentProfile.id}`)
         await setDoc(watchlistRef, { items: newList })
-        saveLocalData(`cache_watchlist_${userState.uid}`, newList)
+        saveLocalData(`cache_watchlist_${userState.uid}_${currentProfile.id}`, newList)
     }
 }
 
@@ -385,9 +391,13 @@ function initHistoryListener(uid, profileId) {
             const data = docSnap.data().items || []
             data.sort((a, b) => new Date(b.watchedAt) - new Date(a.watchedAt))
             watchHistory.splice(0, watchHistory.length, ...data)
-            saveLocalData(`cache_history_${uid}`, data)
+            saveLocalData(`cache_history_${uid}_${profileId}`, data)
         } else {
-            setDoc(historyRef, { items: [] })
+            // If doc doesn't exist, only clear if we are sure (no recent writes)
+            if (watchHistory.length > 0 && Date.now() - lastHistoryWrite > 5000) {
+                watchHistory.splice(0, watchHistory.length)
+                saveLocalData(`cache_history_${uid}_${profileId}`, [])
+            }
         }
         userState.historyLoading = false
     }, (error) => {
@@ -424,7 +434,7 @@ export async function addToHistory(item, episode = null) {
     
     const historyRef = doc(db, 'history', `${userState.uid}_${currentProfile.id}`)
     await setDoc(historyRef, { items: newList })
-    saveLocalData(`cache_history_${userState.uid}`, newList)
+    saveLocalData(`cache_history_${userState.uid}_${currentProfile.id}`, newList)
 }
 
 // ============ RATINGS & REVIEWS ============
