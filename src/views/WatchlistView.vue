@@ -245,7 +245,8 @@ function decrementEpisode(item) {
   border-radius: var(--radius-lg);
   padding: var(--spacing-md);
   transition: all var(--transition-normal);
-  min-height: 180px;
+  min-height: 160px;
+  max-height: 160px;
 }
 
 .watchlist-item:hover {
@@ -255,8 +256,8 @@ function decrementEpisode(item) {
 
 .watchlist-item__poster {
   flex-shrink: 0;
-  width: 100px;
-  height: 150px;
+  width: 90px;
+  height: 128px;
   border-radius: var(--radius-md);
   overflow: hidden;
   position: relative;

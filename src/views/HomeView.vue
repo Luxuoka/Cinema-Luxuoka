@@ -99,7 +99,7 @@
         </template>
 
         <template v-else>
-          <div v-if="!userState.isLoggedIn" class="login-banner-home">
+          <div v-if="!userState.isLoggedIn && !userState.loading" class="login-banner-home">
             <div class="lb-content">
               <h2>Ingin Pengalaman Lebih Seru?</h2>
               <p>Login sekarang untuk menyimpan favorit Anda, riwayat tontonan, dan mendapatkan rekomendasi yang pas buat Anda!</p>

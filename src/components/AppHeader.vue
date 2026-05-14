@@ -183,8 +183,15 @@
         </div>
       </div>
 
-      <!-- User Profile / Login -->
-      <div v-if="userState.isLoggedIn" class="user-profile-btn" @click="toggleUserMenu" id="user-btn">
+      <!-- Loading state for auth -->
+      <div v-if="userState.loading" class="icon-btn" style="border:none;background:transparent">
+        <svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5">
+          <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".3"/>
+          <path d="M12 3a9 9 0 019 9"/>
+        </svg>
+      </div>
+
+      <div v-else-if="userState.isLoggedIn" class="user-profile-btn" @click="toggleUserMenu" id="user-btn">
         <img :src="currentProfile.avatar || userProfile.avatar" alt="Avatar" class="user-avatar" />
         
         <!-- User Menu Panel -->

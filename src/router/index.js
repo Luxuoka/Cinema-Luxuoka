@@ -143,7 +143,20 @@ const router = createRouter({
     routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+    // Wait for auth state to be resolved
+    if (userState.loading) {
+        // Simple polling to wait for loading to finish
+        await new Promise(resolve => {
+            const stop = setInterval(() => {
+                if (!userState.loading) {
+                    clearInterval(stop);
+                    resolve();
+                }
+            }, 50);
+        });
+    }
+
     if (to.meta.requiresAuth && !userState.isLoggedIn) {
         next({ name: 'login-required', query: { redirect: to.fullPath } })
     } else {

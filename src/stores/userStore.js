@@ -10,9 +10,9 @@ import { doc, getDoc, setDoc, onSnapshot, collection, updateDoc, arrayUnion, que
 
 export const userState = reactive({
     isLoggedIn: false,
-    uid: null,
     loading: true,
-    historyLoading: false
+    historyLoading: false,
+    sessionStart: Date.now()
 })
 
 export const userProfile = reactive({
@@ -46,8 +46,15 @@ function loadLocalData(key) {
     }
 }
 
+// Rehydrate as soon as the module is loaded
+export const watchlist = reactive(loadLocalData('cache_watchlist_last'))
+export const watchHistory = reactive(loadLocalData('cache_history_last'))
+
 function saveLocalData(key, data) {
     localStorage.setItem(key, JSON.stringify(data))
+    // Also save to a 'last' key for instant rehydration on next refresh
+    if (key.includes('watchlist')) localStorage.setItem('cache_watchlist_last', JSON.stringify(data))
+    if (key.includes('history')) localStorage.setItem('cache_history_last', JSON.stringify(data))
 }
 
 // Rehydrate instantly before Firebase even starts (Guest rehydration removed as requested)
@@ -56,12 +63,22 @@ function saveLocalData(key, data) {
 if (auth) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
+            // UID is now available
             userState.uid = user.uid
+            
+            // Rehydrate profile-specific cache if available
+            const savedProfileId = localStorage.getItem(`profile_${user.uid}`) || 'main'
+            const cachedWatchlist = loadLocalData(`cache_watchlist_${user.uid}_${savedProfileId}`)
+            const cachedHistory = loadLocalData(`cache_history_${user.uid}_${savedProfileId}`)
+            
+            if (cachedWatchlist.length) watchlist.splice(0, watchlist.length, ...cachedWatchlist)
+            if (cachedHistory.length) watchHistory.splice(0, watchHistory.length, ...cachedHistory)
+
             userProfile.username = user.displayName || 'User'
             userProfile.email = user.email || ''
             userProfile.avatar = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}`
             
-            // Load global user preferences from Firestore
+            // Fetch user preferences from Firestore
             if (db) {
                 const userRef = doc(db, 'users', user.uid)
                 const docSnap = await getDoc(userRef)
@@ -96,10 +113,16 @@ if (auth) {
                 const savedProfileId = localStorage.getItem(`profile_${user.uid}`) || 'main'
                 const profile = allProfiles.find(p => p.id === savedProfileId) || allProfiles[0]
                 
+                if (profile) {
+                    selectProfile(profile)
+                } else {
+                    console.warn("No profile found for user")
+                    // Fallback to a dummy profile to avoid crash
+                    selectProfile({ id: 'main', name: 'User', avatar: '' })
+                }
+
                 // IMPORTANT: Login state ONLY set after profile selection to avoid race conditions
                 userState.isLoggedIn = true 
-                selectProfile(profile)
-                initNotifListener(user.uid)
             }
         } else {
             // User is signed out
@@ -108,8 +131,6 @@ if (auth) {
             userProfile.username = 'Guest User'
             userProfile.email = ''
             userProfile.avatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest'
-            
-            // Note: Watchlist and History are NOT cleared on logout per user request
             
             allProfiles.splice(0, allProfiles.length)
             notifications.splice(0, notifications.length)
@@ -148,13 +169,14 @@ export async function logoutUser() {
 
 // ============ WATCHLIST ============
 
-export const watchlist = reactive([])
 let watchlistUnsubscribe = null
 
 export function selectProfile(profile) {
-    currentProfile.id = profile.id
-    currentProfile.name = profile.name
-    currentProfile.avatar = profile.avatar
+    if (!profile) return
+    
+    currentProfile.id = profile.id || 'main'
+    currentProfile.name = profile.name || 'User'
+    currentProfile.avatar = profile.avatar || ''
     currentProfile.favoriteGenres = profile.favoriteGenres || []
     
     localStorage.setItem(`profile_${userState.uid}`, profile.id)
@@ -239,13 +261,17 @@ function initWatchlistListener(uid, profileId) {
 
         if (docSnap.exists()) {
             const data = docSnap.data().items || []
-            watchlist.splice(0, watchlist.length, ...data)
-            saveLocalData(`cache_watchlist_${uid}_${profileId}`, data)
-            console.log(`Watchlist synced for ${profileId}: ${data.length} items`)
-        } else {
-            // If doc doesn't exist, we don't overwrite the cache.
-            // This might be a new profile, or Firestore might be slow.
-            console.log("Watchlist doc not found in Firestore yet.")
+            
+            // PERSISTENCE GUARD: If Firestore returns empty but we have local data,
+            // and it's very early in the session, be cautious.
+            // But if it's a valid non-empty list, sync it.
+            if (data.length > 0 || (watchlist.length > 0 && Date.now() - userState.sessionStart > 10000)) {
+                if (JSON.stringify(data) !== JSON.stringify(watchlist)) {
+                    watchlist.splice(0, watchlist.length, ...data)
+                    saveLocalData(`cache_watchlist_${uid}_${profileId}`, data)
+                }
+            }
+            console.log(`Watchlist synced: ${data.length} items`)
         }
     }, (err) => {
         console.error("Watchlist listener error:", err)
@@ -371,7 +397,6 @@ export function getWatchlistByStatus(status) {
 
 // ============ HISTORY ============
 
-export const watchHistory = reactive([])
 let historyUnsubscribe = null
 
 let lastHistoryWrite = 0
@@ -389,11 +414,13 @@ function initHistoryListener(uid, profileId) {
         if (docSnap.exists()) {
             const data = docSnap.data().items || []
             data.sort((a, b) => new Date(b.watchedAt) - new Date(a.watchedAt))
-            watchHistory.splice(0, watchHistory.length, ...data)
-            saveLocalData(`cache_history_${uid}_${profileId}`, data)
-            console.log(`History synced for ${profileId}: ${data.length} items`)
-        } else {
-            console.log("History doc not found in Firestore yet.")
+            
+            if (data.length > 0 || (watchHistory.length > 0 && Date.now() - userState.sessionStart > 10000)) {
+                if (JSON.stringify(data) !== JSON.stringify(watchHistory)) {
+                    watchHistory.splice(0, watchHistory.length, ...data)
+                    saveLocalData(`cache_history_${uid}_${profileId}`, data)
+                }
+            }
         }
         userState.historyLoading = false
     }, (error) => {
