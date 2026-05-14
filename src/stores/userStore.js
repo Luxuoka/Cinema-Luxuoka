@@ -107,6 +107,7 @@ if (auth) {
                 selectProfile(profile)
                 initNotifListener(user.uid)
             }
+        } else {
             // User is signed out
             userState.isLoggedIn = false
             userState.uid = null
