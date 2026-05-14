@@ -19,8 +19,20 @@
       </button>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="userState.loading" class="watchlist-grid">
+      <div v-for="i in 4" :key="i" class="watchlist-item skeleton-item shimmer-bg">
+        <div class="skeleton-poster"></div>
+        <div class="skeleton-info">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-meta"></div>
+          <div class="skeleton-btn"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Watchlist Grid -->
-    <div v-if="filteredList.length" class="watchlist-grid">
+    <div v-else-if="filteredList.length" class="watchlist-grid">
       <div v-for="item in filteredList" :key="`${item.type}-${item.id}`" class="watchlist-item">
         <router-link :to="`/watch/${item.type}/${item.id}`" class="watchlist-item__poster">
           <img v-if="item.poster" :src="item.poster" :alt="item.title" loading="lazy" />
@@ -91,6 +103,7 @@
 <script setup>
 import { ref, computed, inject } from 'vue'
 import { 
+  userState,
   watchlist, 
   removeFromWatchlist, 
   updateWatchlistStatus, 
@@ -232,6 +245,7 @@ function decrementEpisode(item) {
   border-radius: var(--radius-lg);
   padding: var(--spacing-md);
   transition: all var(--transition-normal);
+  min-height: 180px;
 }
 
 .watchlist-item:hover {
@@ -302,9 +316,11 @@ function decrementEpisode(item) {
   font-size: var(--font-md);
   font-weight: 600;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .item-meta {
@@ -372,20 +388,30 @@ function decrementEpisode(item) {
 
 /* Remove Button */
 .remove-btn {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: transparent;
-  border: 1px solid var(--accent-secondary);
-  border-radius: var(--radius-sm);
-  color: var(--accent-secondary);
+  padding: 8px 12px;
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid rgba(255, 71, 87, 0.3);
+  border-radius: var(--radius-md);
+  color: #ff4757;
   font-size: var(--font-xs);
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: all 0.2s;
   margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  min-width: 100px;
 }
 
 .remove-btn:hover {
-  background: var(--accent-secondary);
+  background: #ff4757;
   color: white;
+  border-color: #ff4757;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
 }
 
 /* Empty State */
@@ -422,6 +448,49 @@ function decrementEpisode(item) {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* SKELETON */
+.skeleton-item {
+  border: none;
+  background: var(--bg-tertiary);
+  opacity: 0.5;
+}
+
+.skeleton-poster {
+  width: 100px;
+  height: 150px;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 80%;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  height: 14px;
+  width: 40%;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+.skeleton-btn {
+  height: 36px;
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  margin-top: auto;
 }
 
 @media (max-width: 768px) {

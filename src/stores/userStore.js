@@ -241,12 +241,11 @@ function initWatchlistListener(uid, profileId) {
             const data = docSnap.data().items || []
             watchlist.splice(0, watchlist.length, ...data)
             saveLocalData(`cache_watchlist_${uid}_${profileId}`, data)
+            console.log(`Watchlist synced for ${profileId}: ${data.length} items`)
         } else {
-            // If doc doesn't exist, only clear if we are sure (no recent writes)
-            if (watchlist.length > 0 && Date.now() - lastWatchlistWrite > 5000) {
-                watchlist.splice(0, watchlist.length)
-                saveLocalData(`cache_watchlist_${uid}_${profileId}`, [])
-            }
+            // If doc doesn't exist, we don't overwrite the cache.
+            // This might be a new profile, or Firestore might be slow.
+            console.log("Watchlist doc not found in Firestore yet.")
         }
     }, (err) => {
         console.error("Watchlist listener error:", err)
@@ -392,12 +391,9 @@ function initHistoryListener(uid, profileId) {
             data.sort((a, b) => new Date(b.watchedAt) - new Date(a.watchedAt))
             watchHistory.splice(0, watchHistory.length, ...data)
             saveLocalData(`cache_history_${uid}_${profileId}`, data)
+            console.log(`History synced for ${profileId}: ${data.length} items`)
         } else {
-            // If doc doesn't exist, only clear if we are sure (no recent writes)
-            if (watchHistory.length > 0 && Date.now() - lastHistoryWrite > 5000) {
-                watchHistory.splice(0, watchHistory.length)
-                saveLocalData(`cache_history_${uid}_${profileId}`, [])
-            }
+            console.log("History doc not found in Firestore yet.")
         }
         userState.historyLoading = false
     }, (error) => {
