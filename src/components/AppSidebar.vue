@@ -1,210 +1,226 @@
 <template>
   <aside class="sidebar" :class="{ open: isOpen }">
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Menu</h3>
-      <router-link to="/" class="sidebar-item" :class="{ active: $route.path === '/' }">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </router-link>
-      <router-link to="/trending" class="sidebar-item" :class="{ active: $route.path === '/trending' }">
-        <i class="fas fa-fire"></i>
-        <span>Trending</span>
-      </router-link>
-      <router-link to="/watchlist" class="sidebar-item" :class="{ active: $route.path === '/watchlist' }">
-        <i class="fas fa-bookmark"></i>
-        <span>Watchlist</span>
-        <span v-if="watchlistCount > 0" class="item-badge">{{ watchlistCount }}</span>
-      </router-link>
+    <!-- LOGO -->
+    <div class="logo">
+      <div class="logo-icon">C</div>
+      <div class="logo-text">Cinema<span>Luxuoka</span></div>
     </div>
 
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Categories</h3>
-      <router-link to="/movies" class="sidebar-item" :class="{ active: $route.path === '/movies' }">
-        <i class="fas fa-film"></i>
-        <span>Movies</span>
-      </router-link>
-      <router-link to="/series" class="sidebar-item" :class="{ active: $route.path === '/series' }">
-        <i class="fas fa-tv"></i>
-        <span>TV Shows</span>
-      </router-link>
-      <router-link to="/anime" class="sidebar-item" :class="{ active: $route.path === '/anime' }">
-        <i class="fas fa-torii-gate" style="color: #FF6B9D;"></i>
-        <span>Anime</span>
-      </router-link>
-    </div>
+    <!-- MENU -->
+    <div class="sidebar-section-label">Menu</div>
+    <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9,22 9,12 15,12 15,22"/>
+      </svg>
+      Home
+    </router-link>
+    <router-link to="/trending" class="nav-item" :class="{ active: $route.path === '/trending' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+      </svg>
+      Trending
+      <span class="nav-badge">Hot</span>
+    </router-link>
+    <router-link to="/watchlist" class="nav-item" :class="{ active: $route.path === '/watchlist' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+      </svg>
+      Watchlist
+      <span v-if="watchlistCount > 0" class="nav-badge nav-badge--count">{{ watchlistCount }}</span>
+    </router-link>
 
+    <!-- KATEGORI -->
+    <div class="sidebar-section-label">Kategori</div>
+    <router-link to="/movies" class="nav-item" :class="{ active: $route.path === '/movies' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+        <line x1="7" y1="2" x2="7" y2="22"/>
+        <line x1="17" y1="2" x2="17" y2="22"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <line x1="2" y1="7" x2="7" y2="7"/>
+        <line x1="2" y1="17" x2="7" y2="17"/>
+        <line x1="17" y1="17" x2="22" y2="17"/>
+        <line x1="17" y1="7" x2="22" y2="7"/>
+      </svg>
+      Movies
+    </router-link>
+    <router-link to="/series" class="nav-item" :class="{ active: $route.path === '/series' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      TV Shows
+    </router-link>
+    <router-link to="/anime" class="nav-item" :class="{ active: $route.path === '/anime' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      Anime
+    </router-link>
 
-
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Support</h3>
-      <a 
-        href="https://wa.me/6281806080731?text=Halo%20Admin,%20tolong%20upload%20film%20[Judul]%20tahun%20[Tahun],%20terima%20kasih." 
-        target="_blank" 
-        class="sidebar-item request-btn"
-      >
-        <i class="fab fa-whatsapp"></i>
-        <span>Request Movie</span>
-      </a>
-    </div>
+    <!-- SUPPORT -->
+    <div class="sidebar-section-label">Support</div>
+    <a
+      href="https://wa.me/6281806080731?text=Halo%20Admin,%20tolong%20upload%20film%20[Judul]%20tahun%20[Tahun],%20terima%20kasih."
+      target="_blank"
+      class="nav-item"
+    >
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Request Movie
+    </a>
   </aside>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { watchlist, userProfile, toggleTheme } from '../stores/userStore'
+import { computed } from 'vue'
+import { watchlist } from '../stores/userStore'
 
-
-
-const props = defineProps({
+defineProps({
   isOpen: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['close'])
-
 const watchlistCount = computed(() => watchlist.length)
-const isDarkMode = computed(() => userProfile.theme === 'dark')
-
-function handleToggleTheme() {
-  toggleTheme()
-}
 </script>
 
 <style scoped>
 .sidebar {
-  width: 240px;
+  width: var(--sidebar);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
   position: fixed;
-  top: 70px;
-  bottom: 0;
-  height: auto;
-  background: var(--bg-secondary);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid var(--border-color);
-  padding: var(--spacing-lg) var(--spacing-md);
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
-  transition: transform var(--transition-normal);
-  z-index: 50;
-
-  /* Custom scrollbar for sidebar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: var(--surface2) transparent;
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 4px;
-}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
 
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-}
-
-.sidebar:hover::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.sidebar-section {
-  margin-bottom: var(--spacing-xl);
-}
-
-.sidebar-title {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  padding: 0 var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
-  font-weight: 700;
-}
-
-.sidebar-item {
+/* LOGO */
+.logo {
+  padding: 24px 20px 18px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: 10px var(--spacing-md);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  transition: all 0.25s ease;
-  text-decoration: none;
-  margin-bottom: 2px;
-  font-weight: 500;
-  font-size: 14px;
-  position: relative;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.sidebar-item i {
-  width: 20px;
-  text-align: center;
-  font-size: var(--font-md);
-  transition: color 0.25s ease;
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.sidebar-item:hover {
-  color: var(--accent-primary);
-  background: rgba(255, 255, 255, 0.05);
-  padding-left: 24px;
-}
-
-.sidebar-item:hover i {
-  color: var(--accent-primary);
-}
-
-.sidebar-item.active {
-  background: rgba(0, 217, 165, 0.15);
-  border-left: 3px solid #00D9A5;
-  color: #00D9A5;
+.logo-text {
+  font-size: 17px;
   font-weight: 600;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  margin-left: -16px;
-  padding-left: calc(var(--spacing-md) + 16px);
+  letter-spacing: -0.3px;
+  color: var(--text);
 }
 
-.sidebar-item.active i {
-  color: #00D9A5;
+.logo-text span {
+  color: var(--accent);
 }
 
-
-.request-btn:hover {
-  background: rgba(37, 211, 102, 0.1) !important;
-  color: #25d366 !important;
-}
-
-.request-btn i {
-  color: #25d366;
-}
-
-.item-badge {
-  margin-left: auto;
-  background: var(--accent-secondary);
-  color: white;
+/* SECTION LABELS */
+.sidebar-section-label {
+  padding: 18px 12px 6px;
   font-size: 10px;
-  padding: 2px 8px;
-  border-radius: var(--radius-xl);
   font-weight: 600;
-  min-width: 20px;
-  text-align: center;
+  letter-spacing: 2px;
+  color: var(--text3);
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
-.sidebar-item.active .item-badge {
-  background: rgba(0,0,0,0.3);
+/* NAV ITEMS */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  margin: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 400;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 
+.nav-item:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: rgba(232, 54, 79, 0.12);
+  color: #fff;
+  border-left: 3px solid var(--accent);
+  padding-left: 13px;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.nav-item.active .nav-icon,
+.nav-item:hover .nav-icon {
+  opacity: 1;
+}
+
+/* BADGES */
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.nav-badge--count {
+  background: var(--accent);
+}
+
+/* MOBILE */
 @media (max-width: 1024px) {
   .sidebar {
-    position: fixed;
-    top: 70px;
-    left: 0;
-    height: calc(100vh - 70px);
     transform: translateX(-100%);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
   }
-
   .sidebar.open {
     transform: translateX(0);
   }

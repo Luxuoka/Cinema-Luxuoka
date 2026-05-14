@@ -1,209 +1,157 @@
 <template>
-  <div class="content-slider">
-    <div class="slider-header">
-      <div class="slider-title-wrapper">
-        <h2 class="slider-title">
-          <span class="title-accent"></span>
-          {{ title }}
-        </h2>
-        <span v-if="subtitle" class="slider-subtitle">{{ subtitle }}</span>
+  <div class="section">
+    <!-- SECTION HEADER -->
+    <div class="section-header">
+      <div class="section-title">
+        <span v-if="titleAccent" class="title-serif">{{ titleAccent }}</span>
+        <span v-if="titleAccent"> {{ titleRest }}</span>
+        <span v-else>{{ title }}</span>
+        <span v-if="subtitle" class="section-sub">{{ subtitle }}</span>
       </div>
-      <div class="slider-controls">
-        <button class="control-btn" @click="scroll('left')" :disabled="isStart" aria-label="Scroll left">
-          <i class="fas fa-chevron-left"></i>
+      <div class="section-nav">
+        <button class="section-nav-btn" @click="scroll('left')" :disabled="isStart" aria-label="Prev">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
         </button>
-        <button class="control-btn" @click="scroll('right')" :disabled="isEnd" aria-label="Scroll right">
-          <i class="fas fa-chevron-right"></i>
+        <button class="section-nav-btn" @click="scroll('right')" :disabled="isEnd" aria-label="Next">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
         </button>
       </div>
     </div>
-    
-    <div 
-      class="slider-track" 
-      ref="track" 
-      @scroll="checkScroll"
-    >
-      <div v-for="item in items" :key="item.id" class="slider-item">
-        <ContentCard :item="item" />
-      </div>
+
+    <!-- CARDS TRACK -->
+    <div class="cards-scroll" ref="track" @scroll="checkScroll">
+      <ContentCard v-for="item in items" :key="item.id" :item="item" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ContentCard from './ContentCard.vue'
 
 const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  },
-  subtitle: {
-    type: String,
-    default: ''
-  },
-  items: {
-    type: Array,
-    default: () => []
-  }
+  title: { type: String, required: true },
+  subtitle: { type: String, default: '' }
+  ,
+  items: { type: Array, default: () => [] }
 })
 
 const track = ref(null)
 const isStart = ref(true)
 const isEnd = ref(false)
 
-function scroll(direction) {
+// Parse title for serif accent (e.g. "Rekomendasi untuk Kamu" → "Rekomendasi" in serif)
+const titleAccent = computed(() => {
+  const firstWord = props.title.split(' ')[0]
+  // Only italicize if the title has more than 1 word
+  if (props.title.split(' ').length > 1) return firstWord
+  return ''
+})
+
+const titleRest = computed(() => {
+  const words = props.title.split(' ')
+  return words.slice(1).join(' ')
+})
+
+function scroll(dir) {
   if (!track.value) return
-  
-  const scrollAmount = track.value.clientWidth * 0.8
-  const currentScroll = track.value.scrollLeft
-  
-  track.value.scrollTo({
-    left: direction === 'left' ? currentScroll - scrollAmount : currentScroll + scrollAmount,
-    behavior: 'smooth'
-  })
+  const amount = track.value.clientWidth * 0.75
+  track.value.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
 }
 
 function checkScroll() {
   if (!track.value) return
-  
   const { scrollLeft, scrollWidth, clientWidth } = track.value
   isStart.value = scrollLeft <= 0
   isEnd.value = Math.ceil(scrollLeft + clientWidth) >= scrollWidth
 }
 
-onMounted(() => {
-  checkScroll()
-})
+onMounted(() => checkScroll())
 </script>
 
 <style scoped>
-.content-slider {
-  margin-bottom: var(--spacing-2xl);
-  position: relative;
+.section {
+  margin-bottom: 36px;
 }
 
-.slider-header {
+/* HEADER */
+.section-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-  padding: 0 var(--spacing-xs);
+  margin-bottom: 16px;
+  padding: 0 2px;
 }
 
-.slider-title {
-  font-size: var(--font-xl);
-  font-weight: 700;
-  color: var(--text-primary);
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  color: var(--text);
 }
 
-.slider-title-wrapper {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.slider-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 400;
+.title-serif {
+  font-family: var(--font-serif);
   font-style: italic;
+  color: var(--accent);
 }
 
-.title-accent {
-  width: 4px;
-  height: 22px;
-  background: var(--accent-gradient);
-  border-radius: 3px;
-  flex-shrink: 0;
+.section-sub {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 400;
+  margin-left: 4px;
 }
 
-.slider-controls {
+/* NAV BUTTONS */
+.section-nav {
   display: flex;
   gap: 6px;
 }
 
-.control-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-full);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
+.section-nav-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.25s ease;
-  font-size: 12px;
+  color: var(--text2);
+  transition: all 0.2s;
 }
 
-.control-btn:hover:not(:disabled) {
-  background: var(--accent-primary);
-  color: #000;
-  border-color: var(--accent-primary);
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(0, 212, 170, 0.3);
+.section-nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
 }
 
-.control-btn:disabled {
+.section-nav-btn:disabled {
   opacity: 0.25;
   cursor: not-allowed;
 }
 
-.slider-track {
+/* CARDS SCROLL */
+.cards-scroll {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 14px;
   overflow-x: auto;
-  scroll-behavior: smooth;
+  padding-bottom: 10px;
   scroll-snap-type: x mandatory;
-  padding: var(--spacing-sm) 0;
-  scrollbar-width: none;
   -ms-overflow-style: none;
-  margin: 0; 
-  padding-left: var(--spacing-xs);
-  padding-right: var(--spacing-xs);
+  scrollbar-width: none;
 }
 
-.slider-track::-webkit-scrollbar {
+.cards-scroll::-webkit-scrollbar {
   display: none;
-}
-
-.slider-item {
-  flex: 0 0 auto;
-  width: 200px;
-  scroll-snap-align: start;
-}
-
-@media (max-width: 768px) {
-  .slider-item {
-    width: 150px;
-  }
-
-  .slider-header {
-    margin-bottom: var(--spacing-md);
-  }
-}
-
-@media (max-width: 480px) {
-  .slider-item {
-    width: 130px;
-  }
-  
-  .slider-title {
-    font-size: var(--font-md);
-  }
-
-  .content-slider {
-    margin-bottom: var(--spacing-lg);
-  }
-  
-  .slider-controls {
-    display: none;
-  }
 }
 </style>

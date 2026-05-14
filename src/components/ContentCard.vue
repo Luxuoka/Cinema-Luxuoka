@@ -1,83 +1,60 @@
 <template>
-  <div class="content-card animate-slide-up" @mouseenter="handleMouseEnter" @mouseleave="showPreview = false" ref="cardRef">
-    <router-link :to="`/watch/${item.type}/${item.id}`" class="content-card__link">
-      <div class="content-card__poster">
-        <img 
-          v-if="item.poster" 
-          :src="item.poster" 
-          :alt="item.title"
-          loading="lazy"
-          @error="handleImageError"
-        />
-        <div v-else class="poster-placeholder">
-          <i class="fas fa-image"></i>
-        </div>
-        
-        <!-- Badges Stack - Top Left -->
-        <div class="content-card__badges">
-          <div v-if="isTrending" class="badge badge--top10">
-            <span class="top10-text">TOP</span>
-            <span class="top10-number">10</span>
-          </div>
-          <div v-if="isNew" class="badge badge--new">NEW</div>
-          <div class="badge badge--quality" :class="qualityClass">
-            {{ item.quality || 'HD' }}
-          </div>
-          <div v-if="item.rating" class="badge badge--rating">
-            <i class="fas fa-star"></i>
-            {{ formatRating(item.rating) }}
-          </div>
-        </div>
+  <div class="movie-card" @click="navigateToWatch">
+    <div class="card-thumb">
+      <img v-if="item.poster" :src="item.poster" :alt="item.title" loading="lazy" @error="handleImgError" />
+      <div v-else class="card-thumb-placeholder">🎬</div>
 
-        <!-- Hover Overlay -->
-        <div class="content-card__overlay">
-          <div class="overlay-actions-top">
-            <button class="circle-btn" @click.stop.prevent="toggleWatchlist" :title="inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'">
-              <i :class="inWatchlist ? 'fas fa-check' : 'fas fa-plus'"></i>
-            </button>
-            <button class="circle-btn"><i class="fas fa-thumbs-up"></i></button>
-            <button class="circle-btn" @click.stop.prevent="navigateToWatch" title="More Info"><i class="fas fa-info-circle"></i></button>
-          </div>
-          
-          <div class="overlay-play" @click.stop.prevent="navigateToWatch">
-            <div class="play-icon-wrapper">
-              <i class="fas fa-play"></i>
-            </div>
-          </div>
-
-          <div class="overlay-info">
-            <div class="info-meta">
-              <span class="match-text">98% Match</span>
-              <span class="meta-age">16+</span>
-              <span>1h 47m</span>
-            </div>
-            <div class="info-genres">
-              {{ item.genres ? (Array.isArray(item.genres) ? item.genres.slice(0, 2).join(' • ') : item.genres) : 'Action • Thriller' }}
-            </div>
-          </div>
+      <!-- Hover Overlay -->
+      <div class="card-overlay">
+        <div class="card-play">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
         </div>
-
-        <!-- Progress Bar for Continue Watching -->
-        <div v-if="item.progress" class="progress-bar-container">
-           <div class="progress-bar" :style="{ width: item.progress + '%' }"></div>
+        <div class="card-actions">
+          <div class="card-action" @click.stop="toggleWatchlist" :title="inWatchlist ? 'Hapus dari watchlist' : 'Tambah ke watchlist'">
+            <svg v-if="inWatchlist" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <div class="card-action" @click.stop="shareItem" title="Bagikan">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </div>
         </div>
       </div>
-      
-      <!-- Clean Info Below Poster -->
-      <div class="content-card__info">
-        <h3 class="content-card__title" :title="item.title">{{ item.title }}</h3>
-        <div class="content-card__meta">
-          <span v-if="item.year">{{ item.year }}</span>
-          <span class="meta-dot">•</span>
-          <span class="meta-type" :class="{ 'anime-type': item.type === 'anime' }">{{ typeBadge }}</span>
-        </div>
+
+      <!-- Badges top-left -->
+      <div class="card-badges">
+        <span v-if="isHD" class="badge badge-hd">HD</span>
+        <span v-if="isTrending" class="badge badge-top">TOP 10</span>
+        <span v-if="isNew" class="badge badge-new">BARU</span>
       </div>
-    </router-link>
+
+      <!-- Rating top-right -->
+      <div v-if="item.rating" class="card-rating">⭐ {{ formatRating(item.rating) }}</div>
+
+      <!-- Progress bar (continue watching) -->
+      <div v-if="item.progress" class="card-progress-bar">
+        <div class="card-progress-fill" :style="{ width: item.progress + '%' }"></div>
+      </div>
+    </div>
+
+    <div class="card-title" :title="item.title">{{ item.title }}</div>
+    <div class="card-meta">{{ item.year }} · {{ typeBadge }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { isInWatchlist, addToWatchlist, removeFromWatchlist, trackGenreInteraction } from '../stores/userStore'
 
@@ -90,45 +67,36 @@ const props = defineProps({
 
 const router = useRouter()
 const showToast = inject('toast')
-const cardRef = ref(null)
 
-const isTrending = computed(() => (parseFloat(props.item.rating) > 8.2))
-const isNew = computed(() => props.item.year === '2024')
+const isHD = true
+const isTrending = computed(() => parseFloat(props.item.rating) > 8.2)
+const isNew = computed(() => {
+  const year = parseInt(props.item.year)
+  return year >= 2025
+})
 
-function handleMouseEnter() {
-  if (props.item.genres) {
-    trackGenreInteraction(props.item.genres)
-  }
-}
+const inWatchlist = computed(() => isInWatchlist(props.item.id, props.item.type))
 
 const typeBadge = computed(() => {
   switch (props.item.type) {
-    case 'series': return 'TV'
-    case 'anime': return 'Anime'
-    case 'movie': return 'Movie'
-    default: return 'Movie'
+    case 'series': return 'TV SHOW'
+    case 'anime': return 'ANIME'
+    default: return 'MOVIE'
   }
-})
-
-const inWatchlist = computed(() => {
-  return isInWatchlist(props.item.id, props.item.type)
-})
-
-const qualityClass = computed(() => {
-  const q = (props.item.quality || 'HD').toLowerCase()
-  if (q.includes('4k') || q.includes('bluray')) return 'quality-gold'
-  return 'quality-standard'
 })
 
 function formatRating(rating) {
-  if (typeof rating === 'number') {
-    return rating.toFixed(1)
-  }
+  if (typeof rating === 'number') return rating.toFixed(1)
   return rating
 }
 
-function handleImageError(e) {
+function handleImgError(e) {
   e.target.style.display = 'none'
+}
+
+function navigateToWatch() {
+  if (props.item.genres) trackGenreInteraction(props.item.genres)
+  router.push(`/watch/${props.item.type || 'movie'}/${props.item.id}`)
 }
 
 function toggleWatchlist() {
@@ -137,338 +105,216 @@ function toggleWatchlist() {
     if (showToast) showToast('Dihapus dari Watchlist', 'info')
   } else {
     addToWatchlist(props.item, 'planned')
-    if (showToast) showToast('Ditambahkan ke Watchlist', 'success')
-    if (props.item.genres) {
-      trackGenreInteraction(props.item.genres)
-    }
+    if (showToast) showToast('❤️ Ditambahkan ke Watchlist!', 'success')
+    if (props.item.genres) trackGenreInteraction(props.item.genres)
   }
 }
 
-function navigateToWatch() {
-  router.push(`/watch/${props.item.type}/${props.item.id}`)
+function shareItem() {
+  const url = `${location.origin}/watch/${props.item.type || 'movie'}/${props.item.id}`
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      if (showToast) showToast('🔗 Link disalin!', 'info')
+    })
+  }
 }
 </script>
 
 <style scoped>
-.content-card {
-  position: relative;
-  width: 100%;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.35s;
+.movie-card {
+  min-width: 160px;
+  max-width: 160px;
+  cursor: pointer;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: transform 0.25s;
 }
 
-.content-card:hover {
-  transform: translateY(-8px) scale(1.04);
-  z-index: 20;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s;
+.movie-card:hover {
+  transform: translateY(-4px);
 }
 
-.content-card__link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
+.movie-card:hover .card-overlay {
+  opacity: 1;
 }
 
-.content-card__poster {
-  position: relative;
-  aspect-ratio: 2/3;
-  border-radius: var(--radius-md);
+.movie-card:hover .card-thumb img,
+.movie-card:hover .card-thumb-placeholder {
+  filter: brightness(0.7);
+}
+
+/* THUMB */
+.card-thumb {
+  height: 230px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  margin-bottom: var(--spacing-sm);
-  background: var(--bg-tertiary);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.35s ease;
+  position: relative;
+  background: var(--surface2);
+  margin-bottom: 10px;
 }
 
-.content-card:hover .content-card__poster {
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 170, 0.15);
-}
-
-.content-card__poster img {
+.card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: filter 0.3s;
 }
 
-.content-card:hover .content-card__poster img {
-  transform: scale(1.08);
-}
-
-.poster-placeholder {
-  position: absolute;
-  inset: 0;
+.card-thumb-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
-  font-size: 2rem;
+  font-size: 48px;
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  transition: filter 0.3s;
 }
 
-/* Badges Stack */
-.content-card__badges {
+/* OVERLAY */
+.card-overlay {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  z-index: 5;
-  transition: transform 0.3s ease;
+  justify-content: flex-end;
+  padding: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
-.content-card:hover .content-card__badges {
-  transform: translateY(-2px);
+.card-play {
+  width: 42px;
+  height: 42px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  box-shadow: 0 8px 20px rgba(232, 54, 79, 0.6);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.card-action {
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.card-action:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* BADGES */
+.card-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  flex-direction: column;
 }
 
 .badge {
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
   letter-spacing: 0.5px;
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.badge--quality {
-  background: rgba(0, 0, 0, 0.7);
+.badge-hd {
+  background: var(--blue);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.badge--quality.quality-gold {
-  background: var(--accent-gradient);
+.badge-top {
+  background: var(--accent);
+  color: #fff;
+}
+
+.badge-new {
+  background: var(--green);
   color: #000;
-  border: none;
 }
 
-.badge--rating {
-  background: rgba(0, 0, 0, 0.7);
-  color: #f1c40f;
-  border: 1px solid rgba(241, 196, 15, 0.2);
-}
-
-/* Hover Overlay System */
-.content-card__overlay {
+/* RATING */
+.card-rating {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 15px;
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 5;
-}
-
-.content-card:hover .content-card__overlay {
-  opacity: 1;
-}
-
-.overlay-actions-top {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  transform: translateY(-10px);
-  transition: all 0.4s ease 0.1s;
-}
-
-.content-card:hover .overlay-actions-top {
-  transform: translateY(0);
-}
-
-.circle-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  padding: 3px 8px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 12px;
-}
-
-.circle-btn:hover {
-  background: white;
-  color: black;
-  transform: scale(1.1);
-}
-
-.overlay-play {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.play-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #000;
-  font-size: 18px;
-  transform: scale(0.5);
-  opacity: 0;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.content-card:hover .play-icon-wrapper {
-  transform: scale(1);
-  opacity: 1;
-}
-
-.overlay-info {
-  transform: translateY(10px);
-  transition: all 0.4s ease 0.1s;
-}
-
-.content-card:hover .overlay-info {
-  transform: translateY(0);
-}
-
-.info-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 3px;
   font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 5px;
+  font-weight: 600;
+  color: var(--gold);
 }
 
-.match-text {
-  color: #4cd137;
-}
-
-.meta-age {
-  border: 1px solid rgba(255,255,255,0.5);
-  padding: 0 4px;
-  border-radius: 2px;
-  font-size: 9px;
-}
-
-.info-genres {
-  font-size: 10px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Info meta inside overlay */
-.info-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.match-text {
-  color: #4cd137;
-}
-
-.meta-age {
-  border: 1px solid rgba(255,255,255,0.5);
-  padding: 0 4px;
-  border-radius: 2px;
-  font-size: 9px;
-}
-
-.info-genres {
-  font-size: 10px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Progress Bar */
-.progress-bar-container {
+/* PROGRESS BAR */
+.card-progress-bar {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 3px;
   background: rgba(255,255,255,0.1);
-  z-index: 6;
 }
 
-.progress-bar {
+.card-progress-fill {
   height: 100%;
-  background: var(--accent-primary);
-  box-shadow: 0 0 10px var(--accent-primary);
+  background: linear-gradient(to right, var(--accent), var(--accent2));
+  border-radius: 3px;
 }
 
-.content-card__info {
-  padding: 8px 4px;
-}
-
-.content-card__title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 3px;
+/* TEXT */
+.card-title {
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-primary);
+  margin-bottom: 4px;
+  color: var(--text);
   transition: color 0.2s;
 }
 
-.content-card:hover .content-card__title {
-  color: var(--accent-primary);
+.movie-card:hover .card-title {
+  color: var(--accent);
 }
 
-.content-card__meta {
+.card-meta {
   font-size: 11px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  color: var(--text3);
 }
 
-.meta-dot {
-  font-size: 8px;
-  opacity: 0.5;
-}
-
-.anime-type {
-  color: #C44FE0;
-  font-weight: 700;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .content-card:hover {
-    transform: translateY(-4px) scale(1.02);
+  .movie-card {
+    min-width: 140px;
+    max-width: 140px;
   }
-  
-  .content-card__overlay {
-    /* Always show some overlay info on mobile/tablet? Or simplified? */
-  }
-}
-
-@media (max-width: 480px) {
-  .content-card__title {
-    font-size: 13px;
-  }
-  
-  .content-card__meta {
-    font-size: 10px;
+  .card-thumb {
+    height: 196px;
   }
 }
 </style>

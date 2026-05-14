@@ -1,102 +1,97 @@
 <template>
-  <section class="hero-carousel" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
-    <div class="carousel-track" :style="trackStyle">
-      <div 
-        v-for="(item, index) in displayItems" 
-        :key="item.id" 
+  <div class="hero" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
+    <!-- SLIDES -->
+    <div class="hero-slides" :style="{ transform: `translateX(-${currentIndex * 100}%)` }">
+      <div
+        v-for="(item, index) in displayItems"
+        :key="item.id"
         class="hero-slide"
-        :class="{ active: index === currentIndex }"
       >
-        <!-- Blurred background layer -->
-        <div class="hero-blur-bg" :style="{ backgroundImage: `url(${item.backdrop || item.poster})` }"></div>
-        
-        <!-- Sharp background image -->
-        <div class="hero-main-bg" :style="{ backgroundImage: `url(${item.backdrop || item.poster})` }"></div>
-        
-        <div class="hero__overlay"></div>
-        
-        <div class="hero__content">
-          <div class="hero__badge" v-if="index === currentIndex">
-            <i class="fas fa-fire"></i>
-            Trending Now
-          </div>
-          
-          <h1 class="hero__title">{{ item.title }}</h1>
-          
-          <p v-if="item.synopsis" class="hero__description">
-            {{ truncateText(item.synopsis, 180) }}
-          </p>
-          
-          <div class="hero__meta">
-            <span v-if="item.rating" class="meta-item rating">
-              <i class="fas fa-star"></i>
-              {{ item.rating }}
-            </span>
-            <span class="meta-divider">|</span>
-            <span v-if="item.year" class="meta-item">
-              <i class="fas fa-calendar"></i>
-              {{ item.year }}
-            </span>
-            <span class="meta-divider">|</span>
-            <span class="meta-item age-rating">18+</span>
-            <span class="meta-divider">|</span>
-            <span class="meta-item type">
-              {{ item.type === 'series' ? 'TV SERIES' : 'MOVIE' }}
-            </span>
-            <span class="meta-divider">|</span>
-            <span class="meta-item duration">
-              <i class="fas fa-clock"></i>
-              {{ item.type === 'series' ? 'S' + (item.seasons || 1) : (item.duration || '1h 47m') }}
-            </span>
-            <span class="meta-divider">|</span>
-            <span class="meta-item genres">
-              {{ item.genres ? (Array.isArray(item.genres) ? item.genres.slice(0, 2).join(', ') : item.genres) : 'Action, Thriller' }}
-            </span>
-          </div>
-          
-          <div class="hero__actions">
-            <router-link 
-              :to="`/watch/${item.type || 'movie'}/${item.id}`" 
-              class="btn btn-primary hero-btn-watch"
-            >
-              <i class="fas fa-play"></i>
-              Watch Now
-            </router-link>
-            <button class="btn btn-secondary hero-btn-info" @click="navigateToWatch(item)">
-              <i class="fas fa-info-circle"></i>
-              More Info
-            </button>
+        <!-- Background Image -->
+        <div
+          class="hero-bg"
+          :style="item.backdrop || item.poster
+            ? { backgroundImage: `url(${item.backdrop || item.poster})` }
+            : { background: bgGradients[index % bgGradients.length] }"
+        ></div>
+
+        <!-- Gradient overlay -->
+        <div class="hero-overlay"></div>
+
+        <!-- Content -->
+        <div class="hero-content">
+          <div class="hero-info">
+            <div class="hero-badge">
+              <span class="badge-dot"></span>
+              {{ item.badge || (index === 0 ? '🔥 TRENDING NOW' : index === 1 ? '🎬 NEW SERIES' : '🌟 TOP RATED') }}
+            </div>
+
+            <h1 class="hero-title">{{ item.title }}</h1>
+
+            <div class="hero-meta">
+              <span class="hero-rating">⭐ {{ formatRating(item.rating) }}</span>
+              <span class="hero-sep">•</span>
+              <span class="hero-year">{{ item.year }}</span>
+              <span class="hero-tag">18+</span>
+              <span class="hero-tag">{{ item.type === 'series' ? 'SERIES' : item.type === 'anime' ? 'ANIME' : 'MOVIE' }}</span>
+              <span class="hero-sep">•</span>
+              <span class="hero-dur">{{ item.type === 'series' ? 'Season ' + (item.seasons || 1) : item.duration || '~2j' }}</span>
+              <span class="hero-sep">•</span>
+              <span class="hero-genre">{{ item.genres ? (Array.isArray(item.genres) ? item.genres.slice(0, 2).join(', ') : item.genres) : 'Action' }}</span>
+            </div>
+
+            <p class="hero-desc">{{ truncate(item.synopsis || item.description, 160) }}</p>
+
+            <div class="hero-btns">
+              <router-link :to="`/watch/${item.type || 'movie'}/${item.id}`" class="btn-primary hero-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5,3 19,12 5,21 5,3"/>
+                </svg>
+                Tonton Sekarang
+              </router-link>
+              <router-link :to="`/watch/${item.type || 'movie'}/${item.id}`" class="btn-secondary hero-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Info Lengkap
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Navigation Buttons -->
-    <div class="carousel-nav prev" @click="prevSlide" v-if="displayItems.length > 1">
-      <i class="fas fa-chevron-left"></i>
-    </div>
-    <div class="carousel-nav next" @click="nextSlide" v-if="displayItems.length > 1">
-      <i class="fas fa-chevron-right"></i>
+    <!-- DOTS INDICATOR -->
+    <div class="hero-dots">
+      <div
+        v-for="(item, i) in displayItems"
+        :key="i"
+        class="hero-dot"
+        :class="{ active: i === currentIndex }"
+        @click="goSlide(i)"
+      ></div>
     </div>
 
-    <!-- Indicators -->
-    <div class="carousel-indicators" v-if="displayItems.length > 1">
-      <button 
-        v-for="(item, index) in displayItems" 
-        :key="index"
-        :class="{ active: index === currentIndex }"
-        @click="currentIndex = index"
-        :aria-label="`Go to slide ${index + 1}`"
-      >
-        <span class="indicator-progress" v-if="index === currentIndex"></span>
-      </button>
+    <!-- PREV / NEXT arrows -->
+    <div class="hero-arrows">
+      <div class="hero-arrow" @click="prevSlide">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"/>
+        </svg>
+      </div>
+      <div class="hero-arrow" @click="nextSlide">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9,18 15,12 9,6"/>
+        </svg>
+      </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 
 const props = defineProps({
   items: {
@@ -105,339 +100,284 @@ const props = defineProps({
   }
 })
 
-const router = useRouter()
 const currentIndex = ref(0)
 let autoPlayInterval = null
 
-const displayItems = computed(() => {
-  return (props.items || []).slice(0, 6)
-})
+const bgGradients = [
+  'linear-gradient(135deg,#1a0a2e,#0d1a3a)',
+  'linear-gradient(135deg,#0a1a0a,#0d2d1a)',
+  'linear-gradient(135deg,#2a0a0a,#1a0a1a)',
+  'linear-gradient(135deg,#1a1a0a,#2d2a0d)',
+  'linear-gradient(135deg,#0a0a2a,#0d1a3a)',
+]
 
-const trackStyle = computed(() => {
-  return {
-    transform: `translateX(-${currentIndex.value * 100}%)`
-  }
-})
+const displayItems = computed(() => (props.items || []).slice(0, 6))
 
-function truncateText(text, maxLength) {
-  if (!text) return ''
-  if (text.length <= maxLength) return text
-  return text.substring(0, maxLength) + '...'
+function formatRating(rating) {
+  if (!rating) return '8.0'
+  return typeof rating === 'number' ? rating.toFixed(1) : rating
 }
 
-function navigateToWatch(item) {
-  router.push(`/watch/${item.type || 'movie'}/${item.id}`)
+function truncate(text, len) {
+  if (!text) return ''
+  return text.length <= len ? text : text.substring(0, len) + '...'
+}
+
+function goSlide(n) {
+  currentIndex.value = n
 }
 
 function nextSlide() {
-  if (displayItems.value.length === 0) return
+  if (!displayItems.value.length) return
   currentIndex.value = (currentIndex.value + 1) % displayItems.value.length
 }
 
 function prevSlide() {
-  if (displayItems.value.length === 0) return
+  if (!displayItems.value.length) return
   currentIndex.value = (currentIndex.value - 1 + displayItems.value.length) % displayItems.value.length
 }
 
 function startAutoPlay() {
   stopAutoPlay()
-  autoPlayInterval = setInterval(nextSlide, 6000)
+  autoPlayInterval = setInterval(nextSlide, 5500)
 }
 
 function stopAutoPlay() {
   if (autoPlayInterval) clearInterval(autoPlayInterval)
 }
 
-onMounted(() => {
-  startAutoPlay()
-})
-
-onUnmounted(() => {
-  stopAutoPlay()
-})
+onMounted(() => startAutoPlay())
+onUnmounted(() => stopAutoPlay())
 </script>
 
 <style scoped>
-.hero-carousel {
+.hero {
   position: relative;
-  height: 560px;
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   overflow: hidden;
-  margin-bottom: var(--spacing-2xl);
-  background: #000;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  height: 460px;
+  margin-bottom: 28px;
 }
 
-.carousel-track {
+/* SLIDES TRACK */
+.hero-slides {
   display: flex;
   height: 100%;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hero-slide {
-  flex: 0 0 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.hero-blur-bg {
-  position: absolute;
-  inset: -20px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(20px) brightness(0.35);
-  z-index: 0;
-}
-
-.hero-main-bg {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 65%;
+  min-width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center top;
-  z-index: 1;
-  mask-image: linear-gradient(to right, transparent 5%, black 45%);
-  -webkit-mask-image: linear-gradient(to right, transparent 5%, black 45%);
+  position: relative;
+  flex-shrink: 0;
 }
 
-/* Improved gradient overlay for better readability and cinematic look */
-.hero__overlay {
+/* BACKGROUND */
+.hero-bg {
   position: absolute;
   inset: 0;
-  background: 
-    linear-gradient(
-      90deg,
-      rgba(10, 10, 10, 1) 0%,    /* Full black start */
-      rgba(10, 10, 10, 0.95) 15%,
-      rgba(10, 10, 10, 0.7) 40%,
-      rgba(10, 10, 10, 0.2) 70%,
-      transparent 100%
-    ),
-    linear-gradient(
-      to top,
-      rgba(10, 10, 10, 0.9) 0%,
-      rgba(10, 10, 10, 0.4) 20%,
-      transparent 50%
-    );
-  z-index: 2;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
 }
 
-.hero__content {
-  position: relative;
-  z-index: 3;
-  padding: 0 60px;
-  max-width: 700px;
-  opacity: 0;
-  transform: translateX(-30px);
-  transition: all 0.6s ease 0.4s;
+/* OVERLAY */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(10,10,15,0.9) 40%, transparent 75%),
+    linear-gradient(to top, rgba(10,10,15,1) 0%, rgba(10,10,15,0.3) 30%, transparent 55%);
 }
 
-.hero-slide.active .hero__content {
-  opacity: 1;
-  transform: translateX(0);
+/* CONTENT */
+.hero-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 40px 48px;
 }
 
-.hero__badge {
+.hero-info {
+  max-width: 520px;
+}
+
+/* BADGE */
+.hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: var(--accent-primary);
-  color: #000;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  animation: glowPulse 2s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 5px rgba(0, 212, 170, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(0, 212, 170, 0.5); }
-}
-
-.hero__title {
-  font-size: 52px;
-  font-weight: 900;
-  margin-bottom: 15px;
-  line-height: 1.08;
-  color: #fff;
-  text-wrap: balance;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.7), 0 4px 30px rgba(0,0,0,0.5);
-  letter-spacing: -0.5px;
-}
-
-.hero__description {
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.7;
-  margin-bottom: 25px;
-  font-size: 15px;
-  max-width: 480px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-}
-
-.hero__meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 30px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fff;
-  font-size: 14px;
   font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-
-.meta-divider {
-  color: rgba(255,255,255,0.3);
-  font-size: 14px;
-  font-weight: 300;
-}
-
-.meta-item i { color: var(--accent-primary); }
-.meta-item.rating i { color: #f1c40f; }
-
-.meta-item.type {
-  padding: 3px 10px;
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 4px;
-  font-size: 10px;
   letter-spacing: 1px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 14px;
 }
 
-.hero__actions {
-  display: flex;
-  gap: 15px;
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
 }
 
-.hero-btn-watch {
-  padding: 14px 34px;
-  font-weight: 700;
-  font-size: 15px;
-  border-radius: 12px;
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
 }
 
-.hero-btn-info {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+/* TITLE */
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 68px;
+  line-height: 0.95;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
   color: #fff;
-  padding: 14px 28px;
-  font-size: 15px;
-  border-radius: 12px;
-}
-.hero-btn-info:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
+  text-shadow: 0 2px 20px rgba(0,0,0,0.6);
 }
 
-/* Navigation Buttons - Premium Glassy Look */
-.carousel-nav {
+/* META */
+.hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.hero-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.hero-year, .hero-dur, .hero-genre {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.hero-tag {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.hero-sep {
+  color: var(--text3);
+  font-size: 10px;
+}
+
+/* DESC */
+.hero-desc {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 440px;
+}
+
+/* BUTTONS */
+.hero-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-btn {
+  padding: 13px 28px;
+  font-size: 15px;
+}
+
+/* DOTS */
+.hero-dots {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 52px;
-  height: 52px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  bottom: 20px;
+  right: 32px;
+  display: flex;
+  gap: 8px;
+}
+
+.hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.hero-dot.active {
+  width: 24px;
+  background: var(--accent);
+}
+
+/* ARROWS */
+.hero-arrows {
+  position: absolute;
+  bottom: 20px;
+  left: 48px;
+  display: flex;
+  gap: 6px;
+}
+
+.hero-arrow {
+  width: 36px;
+  height: 36px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0;
-  font-size: 18px;
+  color: var(--text2);
+  transition: all 0.2s;
 }
 
-.hero-carousel:hover .carousel-nav {
-  opacity: 1;
+.hero-arrow:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
 }
 
-.carousel-nav:hover {
-  background: var(--accent-primary);
-  color: #000;
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 0 30px rgba(0, 212, 170, 0.4);
-  border-color: var(--accent-primary);
-}
-
-.carousel-nav.prev { left: 30px; }
-.carousel-nav.next { right: 30px; }
-
-/* Carousel Indicators - Enhanced with progress bar */
-.carousel-indicators {
-  position: absolute;
-  bottom: 28px;
-  left: 60px;
-  display: flex;
-  gap: 8px;
-  z-index: 10;
-}
-
-.carousel-indicators button {
-  width: 36px;
-  height: 4px;
-  border-radius: 4px;
-  border: none;
-  background: rgba(255,255,255,0.25);
-  cursor: pointer;
-  transition: all 0.4s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.carousel-indicators button:hover {
-  background: rgba(255,255,255,0.45);
-}
-
-.carousel-indicators button.active {
-  background: rgba(255,255,255,0.2);
-  width: 56px;
-}
-
-.indicator-progress {
-  position: absolute;
-  inset: 0;
-  background: var(--accent-primary);
-  border-radius: 4px;
-  animation: indicatorFill 6s linear forwards;
-}
-
-@keyframes indicatorFill {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
+/* RESPONSIVE */
 @media (max-width: 1024px) {
-  .hero-main-bg { width: 100%; mask-image: none; -webkit-mask-image: none; opacity: 0.5; }
-  .hero__content { padding: 0 40px; }
-  .hero__title { font-size: 40px; }
-  .nav-btn { opacity: 1; }
+  .hero { border-radius: 16px; }
+  .hero-content { padding: 32px 32px; }
 }
 
 @media (max-width: 768px) {
-  .hero-carousel { height: 480px; border-radius: 0; margin-left: -20px; margin-right: -20px; }
-  .hero__title { font-size: 32px; }
-  .hero__description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; }
-  .carousel-indicators { left: 40px; bottom: 20px; }
-  .nav-btn { display: none; }
-  .hero__content { padding: 0 24px; }
-  .hero-btn-watch, .hero-btn-info { padding: 12px 20px; font-size: 13px; }
+  .hero {
+    height: 380px;
+    border-radius: 12px;
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+  }
+  .hero-title { font-size: 42px; }
+  .hero-content { padding: 24px; }
+  .hero-desc { display: none; }
+  .hero-arrows { left: 24px; }
+}
+
+@media (max-width: 480px) {
+  .hero { height: 320px; }
+  .hero-title { font-size: 34px; }
 }
 </style>

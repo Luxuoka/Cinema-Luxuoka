@@ -1,96 +1,127 @@
 <template>
   <div class="home-view">
-    <div v-if="initialLoading" class="skeleton-hero-wrapper">
-       <SkeletonLoader type="banner" />
-    </div>
-    <HeroSection v-else :items="featuredItems" />
-
-    <!-- Keyboard Shortcuts Helper -->
-    <KeyboardShortcuts />
-
-    <!-- Quick Filters -->
-    <div class="quick-filters" v-if="!initialLoading">
-      <button 
-        v-for="filter in filters" 
-        :key="filter"
-        :class="['filter-chip', { active: activeFilter === filter }]"
-        @click="activeFilter = filter"
-      >
-        {{ filter }}
-      </button>
+    <!-- HERO -->
+    <div class="hero-wrapper">
+      <div v-if="initialLoading" class="skeleton-hero shimmer-bg"></div>
+      <HeroSection v-else :items="featuredItems" />
     </div>
 
-
-    <!-- Trending Movies Slider -->
-    <div v-if="initialLoading" class="slider-skeleton">
-      <div class="skeleton-header"></div>
-      <div class="skeleton-slider">
-        <SkeletonLoader v-for="i in 6" :key="i" />
+    <!-- CONTENT ROW: main + right panel (right panel is in App.vue as RightSidebar) -->
+    <div class="content-area">
+      <!-- FILTER CHIPS -->
+      <div class="filter-row" v-if="!initialLoading">
+        <button
+          v-for="filter in filters"
+          :key="filter.label"
+          class="filter-chip"
+          :class="{ active: activeFilter === filter.value }"
+          @click="setFilter(filter.value)"
+        >
+          {{ filter.label }}
+        </button>
       </div>
-    </div>
-    <!-- Filtered Content / Default Content -->
-    <div v-if="filtering" class="slider-skeleton">
-      <div class="skeleton-header"></div>
-      <div class="skeleton-slider">
-        <SkeletonLoader v-for="i in 6" :key="i" />
+
+      <!-- SKELETON SLIDERS -->
+      <div v-if="initialLoading || filtering" class="sliders-skeleton">
+        <div v-for="i in 3" :key="i" class="skeleton-section">
+          <div class="skeleton-title shimmer-bg"></div>
+          <div class="skeleton-row">
+            <div v-for="j in 6" :key="j" class="skeleton-card shimmer-bg"></div>
+          </div>
+        </div>
       </div>
+
+
+      <template v-else>
+        <!-- FILTERED OR DEFAULT SECTIONS -->
+        <template v-if="activeFilter !== 'all'">
+          <ContentSlider
+            v-if="filteredMovies.length > 0"
+            :title="`${activeFilterLabel} Movies`"
+            :items="filteredMovies"
+          />
+          <ContentSlider
+            v-if="filteredSeries.length > 0"
+            :title="`${activeFilterLabel} TV Series`"
+            :items="filteredSeries"
+          />
+          <div v-if="filteredMovies.length === 0 && filteredSeries.length === 0" class="no-results">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <p>Tidak ada hasil untuk "{{ activeFilterLabel }}"</p>
+          </div>
+        </template>
+
+        <template v-else>
+          <!-- RECOMMENDATIONS -->
+          <ContentSlider
+            v-if="recommendations.length > 0"
+            title="Rekomendasi untuk Kamu"
+            :subtitle="recommendationContext"
+            :items="recommendations"
+          />
+
+          <!-- TRENDING MOVIES -->
+          <ContentSlider
+            title="🔥 Trending"
+            subtitle="— minggu ini"
+            :items="trendingMovies"
+          />
+
+          <!-- NEW RELEASES -->
+          <ContentSlider
+            title="✨ Baru Ditambahkan"
+            :items="newReleases"
+          />
+
+          <!-- TRENDING SERIES -->
+          <ContentSlider
+            title="Trending TV Shows"
+            :items="trendingSeries"
+          />
+
+          <!-- TRENDING ANIME -->
+          <ContentSlider
+            v-if="trendingAnime.length > 0"
+            title="⚡ Trending Anime"
+            :items="trendingAnime"
+          />
+        </template>
+
+        <!-- GENRE GRID -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Jelajahi Genre</div>
+          </div>
+          <div class="genre-grid">
+            <div
+              v-for="genre in genres"
+              :key="genre.label"
+              class="genre-card"
+              :style="{ background: genre.bg }"
+              @click="setFilter(genre.filter)"
+            >
+              <span class="genre-emoji">{{ genre.emoji }}</span>
+              {{ genre.label }}
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
-    <template v-else-if="activeFilter !== 'All'">
-      <ContentSlider 
-        v-if="filteredMovies.length > 0"
-        :title="`${activeFilter} Movies`" 
-        :items="filteredMovies" 
-      />
-      <ContentSlider 
-        v-if="filteredSeries.length > 0"
-        :title="`${activeFilter} TV Series`" 
-        :items="filteredSeries" 
-      />
-      <div v-if="filteredMovies.length === 0 && filteredSeries.length === 0" class="no-results">
-        <i class="fas fa-search"></i>
-        <p>No results found for "{{ activeFilter }}"</p>
-      </div>
-    </template>
-    <template v-else>
-      <ContentSlider 
-        v-if="recommendations.length > 0"
-        title="Recommended for You" 
-        :subtitle="recommendationContext"
-        :items="recommendations" 
-      />
 
-      <ContentSlider 
-        title="Trending Movies" 
-        :items="trendingMovies" 
-      />
-
-      <ContentSlider 
-        title="Trending Anime" 
-        :items="trendingAnime" 
-      />
-
-      <ContentSlider 
-        title="New Releases" 
-        :items="newReleases" 
-      />
-
-      <ContentSlider 
-        title="Trending TV Shows" 
-        :items="trendingSeries" 
-      />
-    </template>
+    <!-- FOOTER -->
+    <AppFooter @open-auth="openAuth" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import HeroSection from '../components/HeroSection.vue'
 import ContentSlider from '../components/ContentSlider.vue'
-import SkeletonLoader from '../components/SkeletonLoader.vue'
-import KeyboardShortcuts from '../components/KeyboardShortcuts.vue'
-import { 
-  getTrendingMovies, 
+import AppFooter from '../components/AppFooter.vue'
+import {
+  getTrendingMovies,
   getTrendingSeries,
   getNowPlayingMovies,
   discoverMovies,
@@ -99,9 +130,9 @@ import {
 import { getTrendingAnime } from '../services/animeApi'
 import { getPersonalizedRecommendations } from '../services/recommendations'
 import { watchlist } from '../stores/userStore'
-import { watch } from 'vue'
 
-const router = useRouter()
+const showToast = inject('toast', null)
+
 const trendingMovies = ref([])
 const trendingSeries = ref([])
 const trendingAnime = ref([])
@@ -110,31 +141,62 @@ const featuredItems = ref([])
 const recommendations = ref([])
 const initialLoading = ref(true)
 const filtering = ref(false)
-
 const filteredMovies = ref([])
 const filteredSeries = ref([])
+const activeFilter = ref('all')
 
-const activeFilter = ref('All')
-const filters = ['All', 'Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', '2024', 'Top Rated']
+const filters = [
+  { label: 'Semua', value: 'all' },
+  { label: 'Action', value: 'action' },
+  { label: 'Comedy', value: 'comedy' },
+  { label: 'Drama', value: 'drama' },
+  { label: 'Horror', value: 'horror' },
+  { label: 'Sci-Fi', value: 'scifi' },
+  { label: 'Anime', value: 'anime' },
+  { label: '2024', value: '2024' },
+  { label: 'Top Rated', value: 'top' },
+]
+
+const genres = [
+  { emoji: '💥', label: 'Action', filter: 'action', bg: 'linear-gradient(135deg,rgba(232,54,79,.12),rgba(232,54,79,.04))' },
+  { emoji: '😂', label: 'Comedy', filter: 'comedy', bg: 'linear-gradient(135deg,rgba(245,200,66,.12),rgba(245,200,66,.04))' },
+  { emoji: '🎭', label: 'Drama', filter: 'drama', bg: 'linear-gradient(135deg,rgba(74,158,255,.12),rgba(74,158,255,.04))' },
+  { emoji: '👻', label: 'Horror', filter: 'horror', bg: 'linear-gradient(135deg,rgba(139,92,246,.12),rgba(139,92,246,.04))' },
+  { emoji: '🚀', label: 'Sci-Fi', filter: 'scifi', bg: 'linear-gradient(135deg,rgba(6,182,212,.12),rgba(6,182,212,.04))' },
+  { emoji: '⚔️', label: 'Anime', filter: 'anime', bg: 'linear-gradient(135deg,rgba(46,204,130,.12),rgba(46,204,130,.04))' },
+  { emoji: '❤️', label: 'Romance', filter: 'romance', bg: 'linear-gradient(135deg,rgba(249,124,22,.12),rgba(249,124,22,.04))' },
+  { emoji: '🔍', label: 'Thriller', filter: 'thriller', bg: 'linear-gradient(135deg,rgba(153,153,255,.12),rgba(153,153,255,.04))' },
+]
+
+const continueWatching = [
+  { emoji: '🦸', title: 'Avengers: Endgame', ep: '1j 11m tersisa • 68% selesai', progress: 68 },
+  { emoji: '👑', title: 'The Boys', ep: 'S4 E3 • 32% selesai', progress: 32 },
+  { emoji: '🔮', title: 'Euphoria', ep: 'S2 Finale • 85% selesai', progress: 85 },
+]
+
+const genreMap = { action: 28, comedy: 35, drama: 18, horror: 27, scifi: 878 }
+
+const activeFilterLabel = computed(() => {
+  const f = filters.find(f => f.value === activeFilter.value)
+  return f ? f.label : ''
+})
 
 const recommendationContext = computed(() => {
   if (watchlist.length > 0) {
     const last = watchlist[watchlist.length - 1]
-    return `Because you added "${last.title}"`
+    return `— Karena kamu menambahkan "${last.title}"`
   }
-  return 'Hand-picked for you'
+  return '— Dipilih khusus untuk kamu'
 })
 
-const genreMap = {
-  'Action': 28,
-  'Comedy': 35,
-  'Drama': 18,
-  'Horror': 27,
-  'Sci-Fi': 878
+function openAuth() {
+  // Emit to App.vue via provide/inject or event bus
+  // For now we use a global event
+  window.dispatchEvent(new CustomEvent('open-auth'))
 }
 
 async function loadContent() {
-  if (activeFilter.value === 'All') {
+  if (activeFilter.value === 'all') {
     initialLoading.value = true
     try {
       const [movies, series, anime, newMovies, recs] = await Promise.all([
@@ -144,13 +206,11 @@ async function loadContent() {
         getNowPlayingMovies(),
         getPersonalizedRecommendations(15)
       ])
-      
       trendingMovies.value = movies
       trendingSeries.value = series
       trendingAnime.value = anime
       newReleases.value = newMovies
       recommendations.value = recs || []
-      
       const source = newMovies.length > 0 ? newMovies : movies
       featuredItems.value = source.filter(m => m.poster || m.backdrop).slice(0, 8)
     } finally {
@@ -159,151 +219,322 @@ async function loadContent() {
     return
   }
 
-  // Filter Logic
   filtering.value = true
   try {
     const filter = activeFilter.value
     let params = {}
-    
-    if (genreMap[filter]) {
-      params.genre = genreMap[filter]
-    } else if (filter === '2024') {
-      params.year = '2024'
-    } else if (filter === 'Top Rated') {
-      params.sortBy = 'vote_average'
-    }
-
+    if (genreMap[filter]) params.genre = genreMap[filter]
+    else if (filter === '2024') params.year = '2024'
+    else if (filter === 'top') params.sortBy = 'vote_average'
     const [movies, series] = await Promise.all([
       discoverMovies(params),
       discoverSeries(params)
     ])
-    
     filteredMovies.value = movies
     filteredSeries.value = series
-  } catch (error) {
-    console.error('Filtering failed:', error)
+  } catch (err) {
+    console.error('Filter failed:', err)
   } finally {
     filtering.value = false
   }
 }
 
-watch(activeFilter, () => {
-  loadContent()
-})
+function setFilter(value) {
+  activeFilter.value = value
+}
 
-
-
+watch(activeFilter, () => loadContent())
 
 onMounted(() => {
   loadContent()
+  // Listen for auth event from footer
+  window.addEventListener('open-auth', () => {
+    window.dispatchEvent(new CustomEvent('cinema-open-auth'))
+  })
 })
 </script>
 
 <style scoped>
 .home-view {
-  animation: fadeIn 0.4s ease;
-  padding-bottom: var(--spacing-2xl);
-}
-
-.quick-filters {
   display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 0 var(--spacing-md) var(--spacing-xl);
-  scrollbar-width: none;
+  flex-direction: column;
+  min-height: 100vh;
+  /* App.vue main-content provides the 28px padding */
+  margin: -28px; /* pull hero and footer to full-width */
 }
 
-.quick-filters::-webkit-scrollbar {
-  display: none;
+.hero-wrapper,
+.content-area {
+  padding: 28px;
+}
+
+.hero-wrapper {
+  padding-bottom: 0;
+}
+
+/* SKELETON HERO */
+.skeleton-hero {
+  height: 460px;
+  border-radius: 20px;
+  margin-bottom: 28px;
+}
+
+/* FILTER ROW */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .filter-chip {
-  padding: 8px 20px;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.filter-chip:hover:not(.active) {
-  border-color: #6B7280;
-  color: white;
+.filter-chip:hover {
+  border-color: var(--border2);
+  color: var(--text);
 }
 
 .filter-chip.active {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #000;
-  font-weight: 700;
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
 }
 
-
-.slider-header-wrapper {
+/* SKELETON SLIDERS */
+.sliders-skeleton {
   display: flex;
-  align-items: baseline;
-  padding: 0 var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
+  flex-direction: column;
+  gap: 36px;
+}
+
+.skeleton-section {}
+
+.skeleton-title {
+  height: 22px;
+  width: 200px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.skeleton-card {
+  min-width: 160px;
+  height: 230px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+/* SECTION (shared) */
+.section {
+  margin-bottom: 36px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 2px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+/* CONTINUE WATCHING */
+.cards-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cards-scroll::-webkit-scrollbar { display: none; }
+
+.cw-card {
+  min-width: 260px;
+  max-width: 260px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: all 0.25s;
+}
+
+.cw-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-3px);
+}
+
+.cw-thumb {
+  height: 140px;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cw-emoji {
+  font-size: 56px;
+}
+
+.cw-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.cw-card:hover .cw-play-overlay {
+  opacity: 1;
+}
+
+.cw-play-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cw-bar {
+  height: 3px;
+  background: var(--surface2);
+}
+
+.cw-progress {
+  height: 100%;
+  background: linear-gradient(to right, var(--accent), var(--accent2));
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.cw-info {
+  padding: 12px;
+}
+
+.cw-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 3px;
+  color: var(--text);
+}
+
+.cw-ep {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* GENRE GRID */
+.genre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
 }
 
-.slider-header-wrapper .section-title {
-  margin-bottom: 0;
+.genre-card {
+  height: 80px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  position: relative;
+  overflow: hidden;
 }
 
-.recommendation-context {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text-muted);
-  margin-left: 12px;
-  font-style: italic;
+.genre-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.04);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.skeleton-hero-wrapper {
-  margin-bottom: var(--spacing-2xl);
+.genre-card:hover::after {
+  opacity: 1;
 }
 
-.slider-skeleton {
-  margin-bottom: var(--spacing-2xl);
+.genre-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border2);
+  color: var(--text);
 }
 
-.skeleton-header {
-  height: 30px;
-  width: 200px;
-  background: var(--bg-tertiary);
-  margin-bottom: 20px;
-  border-radius: 4px;
+.genre-emoji {
+  font-size: 22px;
 }
 
-.skeleton-slider {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 20px;
-}.no-results {
+/* NO RESULTS */
+.no-results {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 80px 20px;
-  color: var(--text-muted);
+  color: var(--text3);
   text-align: center;
+  gap: 16px;
 }
 
-.no-results i {
-  font-size: 3rem;
-  margin-bottom: 20px;
-  opacity: 0.3;
-}
-
-/* End of view styles */
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .hero-wrapper, .content-area {
+    padding: 16px;
+  }
+  .hero-wrapper {
+    padding-bottom: 0;
+  }
 }
 </style>

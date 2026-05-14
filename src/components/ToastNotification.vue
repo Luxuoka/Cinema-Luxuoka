@@ -103,10 +103,10 @@ defineExpose({ addToast, removeToast })
   flex-shrink: 0;
 }
 
-.toast--success .toast__icon-container { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-.toast--error .toast__icon-container { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.toast--success .toast__icon-container { background: rgba(46, 204, 130, 0.15); color: var(--green); }
+.toast--error .toast__icon-container { background: rgba(232, 54, 79, 0.15); color: var(--accent); }
 .toast--warning .toast__icon-container { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.toast--info .toast__icon-container { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.toast--info .toast__icon-container { background: rgba(74, 158, 255, 0.15); color: var(--blue); }
 
 .toast__icon {
   font-size: 16px;
@@ -144,10 +144,10 @@ defineExpose({ addToast, removeToast })
   animation: progressShrink linear forwards;
 }
 
-.toast__progress.success { background: #22c55e; }
-.toast__progress.error { background: #ef4444; }
+.toast__progress.success { background: var(--green); }
+.toast__progress.error { background: var(--accent); }
 .toast__progress.warning { background: #f59e0b; }
-.toast__progress.info { background: #3b82f6; }
+.toast__progress.info { background: var(--blue); }
 
 @keyframes progressShrink {
   from { width: 100%; }
@@ -175,7 +175,7 @@ defineExpose({ addToast, removeToast })
 
 @media (max-width: 1024px) {
   .toast-container {
-    bottom: 90px; /* Space for mobile nav */
+    bottom: 24px;
     right: 16px;
     left: 16px;
   }

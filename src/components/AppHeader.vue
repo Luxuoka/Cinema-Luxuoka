@@ -1,896 +1,661 @@
 <template>
-  <header class="header">
-    <div class="header-left">
-      <button class="hamburger-btn" @click="$emit('toggle-sidebar')">
-        <i class="fas fa-bars"></i>
+  <header class="topbar">
+    <!-- MENU TOGGLE (mobile) -->
+    <button class="menu-toggle" @click="$emit('toggle-sidebar')" aria-label="Toggle menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        ref="searchInputRef"
+        class="search-input"
+        type="text"
+        v-model="searchQuery"
+        placeholder="Cari film, series, anime..."
+        @input="handleSearch"
+        @focus="searchFocused = true"
+        @blur="handleBlur"
+        autocomplete="off"
+      >
+      <button v-if="searchQuery" class="search-clear" @click="clearSearch">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
       </button>
-      <router-link to="/" class="logo">
-        <span class="logo-text">Cinema<span class="logo-accent">Luxuoka</span></span>
-      </router-link>
+
+      <!-- DROPDOWN -->
+      <div v-if="searchFocused" class="search-dropdown">
+        <!-- Suggestions when empty -->
+        <template v-if="!searchQuery">
+          <div class="search-suggestions-title">Trending Sekarang</div>
+          <div
+            v-for="(term, i) in trendingTerms"
+            :key="term"
+            class="search-suggestion"
+            @mousedown.prevent="quickSearch(term)"
+          >
+            <span class="suggestion-rank">{{ i + 1 }}</span>
+            <span>{{ term }}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--green);opacity:0.8">
+              <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+            </svg>
+          </div>
+        </template>
+
+        <!-- Loading -->
+        <div v-else-if="searching" class="search-status">
+          <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".3"/>
+            <path d="M12 3a9 9 0 019 9"/>
+          </svg>
+          Mencari...
+        </div>
+
+        <!-- Results -->
+        <template v-else-if="searchQuery">
+          <!-- Movies -->
+          <div v-if="results.movies.length" class="search-group">
+            <div class="search-group-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+              Movies
+            </div>
+            <router-link
+              v-for="item in results.movies.slice(0, 4)"
+              :key="item.id"
+              :to="`/watch/movie/${item.id}`"
+              class="search-result"
+              @click="clearSearch"
+            >
+              <div class="search-thumb">
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                <div v-else class="search-thumb-placeholder">🎬</div>
+              </div>
+              <div class="search-meta">
+                <div class="search-title" v-html="highlight(item.title, searchQuery)"></div>
+                <div class="search-sub">⭐ {{ item.rating }} · {{ item.year }}</div>
+              </div>
+              <span class="search-category">Movie</span>
+            </router-link>
+          </div>
+
+          <!-- Series -->
+          <div v-if="results.series.length" class="search-group">
+            <div class="search-group-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              TV Series
+            </div>
+            <router-link
+              v-for="item in results.series.slice(0, 4)"
+              :key="item.id"
+              :to="`/watch/series/${item.id}`"
+              class="search-result"
+              @click="clearSearch"
+            >
+              <div class="search-thumb">
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                <div v-else class="search-thumb-placeholder">📺</div>
+              </div>
+              <div class="search-meta">
+                <div class="search-title" v-html="highlight(item.title, searchQuery)"></div>
+                <div class="search-sub">⭐ {{ item.rating }} · {{ item.year }}</div>
+              </div>
+              <span class="search-category">Series</span>
+            </router-link>
+          </div>
+
+          <!-- Anime -->
+          <div v-if="results.anime && results.anime.length" class="search-group">
+            <div class="search-group-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Anime
+            </div>
+            <router-link
+              v-for="item in results.anime.slice(0, 4)"
+              :key="item.id"
+              :to="`/watch/anime/${item.id}`"
+              class="search-result"
+              @click="clearSearch"
+            >
+              <div class="search-thumb">
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" />
+                <div v-else class="search-thumb-placeholder">⚡</div>
+              </div>
+              <div class="search-meta">
+                <div class="search-title" v-html="highlight(item.title, searchQuery)"></div>
+                <div class="search-sub">⭐ {{ item.rating }} · {{ item.year }}</div>
+              </div>
+              <span class="search-category" style="color:var(--blue)">Anime</span>
+            </router-link>
+          </div>
+
+          <!-- No results -->
+          <div v-if="!results.movies.length && !results.series.length && (!results.anime || !results.anime.length) && !searching" class="search-status">
+            Tidak ditemukan "{{ searchQuery }}" 😕
+          </div>
+        </template>
+      </div>
     </div>
 
-    <!-- Removed redundant nav-tabs as requested -->
+    <!-- RIGHT ACTIONS -->
+    <div class="topbar-right">
+      <!-- Notification -->
+      <div class="icon-btn" style="position:relative" @click="toggleNotif" id="notif-btn">
+        <div class="notif-dot"></div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
 
-
-    <div class="header-right">
-      <div class="search-container">
-        <div 
-          class="search-bar" 
-          :class="{ focused: searchFocused, 'expanded': searchFocused || searchQuery }"
-        >
-          <i class="fas fa-search" @click="expandSearch"></i>
-          <input 
-            ref="searchInput"
-            type="text" 
-            v-model="searchQuery"
-            placeholder="Search movies, series..."
-            @focus="searchFocused = true"
-            @blur="handleBlur"
-            @input="handleSearch"
-          />
-          <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
-            <i class="fas fa-times"></i>
-          </button>
-
-          <!-- Search Results Dropdown - Smart Suggestions -->
-          <div v-if="searchFocused" class="search-results custom-scrollbar">
-            <!-- Suggestions when empty -->
-            <div v-if="!searchQuery" class="search-suggestions">
-               <div class="suggestion-section">
-                  <h4 class="suggestion-title">Trending Now</h4>
-                  <div class="trending-list">
-                    <div v-for="(term, i) in ['Squid Game 2', 'Deadpool', 'Arcane', 'Moana 2']" :key="term" class="trending-item" @mousedown="searchQuery = term; handleSearch()">
-                      <span class="trending-rank">{{ i + 1 }}</span>
-                      <span class="trending-name">{{ term }}</span>
-                      <i class="fas fa-chart-line trending-icon"></i>
-                    </div>
-                  </div>
-               </div>
+        <!-- Notif Panel -->
+        <div class="notif-panel" :class="{ open: notifOpen }">
+          <div class="notif-header">
+            <span>Notifikasi</span>
+            <span class="notif-mark-read">Tandai semua dibaca</span>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot-sm"></div>
+            <div>
+              <div class="notif-text">Film baru <b>Swapped</b> sudah tersedia!</div>
+              <div class="notif-time">2 jam lalu</div>
             </div>
-
-            <!-- Loading State -->
-            <div v-if="searching" class="search-status">
-               <i class="fas fa-circle-notch fa-spin"></i> searching...
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot-sm"></div>
+            <div>
+              <div class="notif-text">Episode baru <b>The Boys S4</b> sudah tayang</div>
+              <div class="notif-time">5 jam lalu</div>
             </div>
-
-            <!-- Results -->
-            <template v-else-if="searchQuery">
-              <div v-if="results.movies.length" class="result-section">
-                <h4><i class="fas fa-film"></i> Movies</h4>
-                <router-link 
-                  v-for="item in results.movies.slice(0, 5)" 
-                  :key="item.id" 
-                  :to="`/watch/movie/${item.id}`"
-                  class="result-item"
-                  @click="clearSearch"
-                >
-                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-                  <div class="result-info">
-                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                    <span class="year">{{ item.year }} • Movie</span>
-                  </div>
-                </router-link>
-              </div>
-
-              <div v-if="results.series.length" class="result-section">
-                <h4><i class="fas fa-tv"></i> TV Series</h4>
-                <router-link 
-                  v-for="item in results.series.slice(0, 5)" 
-                  :key="item.id" 
-                  :to="`/watch/series/${item.id}`"
-                  class="result-item"
-                  @click="clearSearch"
-                >
-                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-                  <div class="result-info">
-                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                    <span class="year">{{ item.year }} • TV Series</span>
-                  </div>
-                </router-link>
-              </div>
-
-              <div v-if="results.anime && results.anime.length" class="result-section">
-                <h4><i class="fas fa-torii-gate" style="color:#C44FE0"></i> Anime</h4>
-                <router-link 
-                  v-for="item in results.anime.slice(0, 5)" 
-                  :key="item.id" 
-                  :to="`/watch/anime/${item.id}`"
-                  class="result-item"
-                  @click="clearSearch"
-                >
-                  <img v-if="item.poster" :src="item.poster" :alt="item.title" />
-                  <div class="result-info">
-                    <span class="title" v-html="highlightMatch(item.title, searchQuery)"></span>
-                    <span class="year">{{ item.year }} • Anime</span>
-                  </div>
-                </router-link>
-              </div>
-
-              <div v-if="!results.movies.length && !results.series.length && (!results.anime || !results.anime.length) && !searching" class="search-status">
-                No results found for "{{ searchQuery }}"
-              </div>
-            </template>
+          </div>
+          <div class="notif-item" style="opacity:0.6">
+            <div style="width:8px;height:8px;flex-shrink:0"></div>
+            <div>
+              <div class="notif-text">Welcome ke CinemaLuxuoka! Nikmati streaming premium.</div>
+              <div class="notif-time">1 hari lalu</div>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, reactive } from 'vue'
 import { searchAll } from '../services/api'
-import { userProfile, toggleTheme, watchlist } from '../stores/userStore'
 
-const route = useRoute()
-const router = useRouter()
-
-
-const isDark = computed(() => userProfile.theme === 'dark')
-const watchlistCount = computed(() => watchlist.length)
-
-// Dropdown states
-const showNotifications = ref(false)
-const showProfileDropdown = ref(false)
-const showSettings = ref(false)
-
-function handleThemeToggle() {
-  toggleTheme()
-}
-
-// Notifications dummy data
-const notifications = ref([
-  { 
-    id: 1, 
-    title: 'Baru Rilis', 
-    body: 'The Last of Us S2 E3 sudah tersedia!', 
-    time: '2 jam lalu', 
-    read: false,
-    img: 'https://image.tmdb.org/t/p/w200/uKV9nQ1Yvz48oQiv99S67UM9IlS.jpg'
-  },
-  { 
-    id: 2, 
-    title: 'Rekomendasi', 
-    body: 'Berdasarkan tontonanmu, coba "Silo"', 
-    time: '5 jam lalu', 
-    read: true,
-    img: 'https://image.tmdb.org/t/p/w200/kREwk7hcyyT99u9tT9SbpZpzdik.jpg'
-  }
-])
-
-const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
-
-function markAllRead() {
-  notifications.value.forEach(n => n.read = true)
-}
-
-function handleBlur() {
-  setTimeout(() => {
-    searchFocused.value = false
-    showResults.value = false
-  }, 200)
-}
-
-function closeAllDropdowns() {
-  showNotifications.value = false
-  showProfileDropdown.value = false
-  showSettings.value = false
-}
-
-const tabs = [
-  { path: '/movies', label: 'Movies' },
-  { path: '/series', label: 'Series' }
-]
+defineEmits(['toggle-sidebar'])
 
 const searchQuery = ref('')
 const searchFocused = ref(false)
-const mobileSearchOpen = ref(false)
-const showResults = ref(false)
 const searching = ref(false)
+const notifOpen = ref(false)
+const searchInputRef = ref(null)
 const results = reactive({ movies: [], series: [], anime: [] })
-const searchInput = ref(null)
+
+const trendingTerms = ['Squid Game 2', 'Deadpool & Wolverine', 'Arcane', 'Attack on Titan', 'The Boys']
 
 let searchTimeout = null
 let searchAbortController = null
 
-function logout() {
-  // Logic for logout
-  closeAllDropdowns()
-}
-
-function isActive(path) {
-  return route.path === path || (path === '/' && route.path === '/')
-}
-
-function expandSearch() {
-  searchFocused.value = true
-  setTimeout(() => searchInput.value?.focus(), 100)
-}
-
-function toggleMenu(menu) {
-  if (menu === 'notifications') {
-    showNotifications.value = !showNotifications.value
-    showProfileDropdown.value = false
-  } else if (menu === 'profile') {
-    showProfileDropdown.value = !showProfileDropdown.value
-    showNotifications.value = false
-  }
-}
-
 function handleSearch() {
   clearTimeout(searchTimeout)
-  
-  const query = searchQuery.value.trim()
-  if (!query) {
-    results.movies = []
-    results.series = []
-    showResults.value = false
-    return
-  }
-
-  showResults.value = true
+  const q = searchQuery.value.trim()
+  if (!q) { clearResults(); return }
   searching.value = true
-
   searchTimeout = setTimeout(async () => {
     if (searchAbortController) searchAbortController.abort()
     searchAbortController = new AbortController()
-    
     try {
-      const data = await searchAll(query, searchAbortController.signal)
+      const data = await searchAll(q, searchAbortController.signal)
       results.movies = data.movies || []
       results.series = data.series || []
       results.anime = data.anime || []
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('Search failed:', error)
-      }
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error('Search error:', err)
     } finally {
       searching.value = false
     }
   }, 400)
 }
 
-function highlightMatch(text, query) {
-  if (!text || !query) return text
-  const regex = new RegExp(`(${query})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+function clearResults() {
+  results.movies = []
+  results.series = []
+  results.anime = []
 }
 
 function clearSearch() {
   searchQuery.value = ''
-  results.movies = []
-  results.series = []
-  results.anime = []
-  showResults.value = false
+  clearResults()
   searchFocused.value = false
+}
+
+function handleBlur() {
+  setTimeout(() => { searchFocused.value = false }, 200)
+}
+
+function quickSearch(term) {
+  searchQuery.value = term
+  handleSearch()
+}
+
+function highlight(text, query) {
+  if (!text || !query) return text
+  const regex = new RegExp(`(${query})`, 'gi')
+  return text.replace(regex, '<span class="hl">$1</span>')
+}
+
+function toggleNotif() {
+  notifOpen.value = !notifOpen.value
+}
+
+// Close notif panel on outside click
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#notif-btn')) {
+      notifOpen.value = false
+    }
+  })
 }
 </script>
 
 <style scoped>
-.header {
+.topbar {
+  height: 64px;
+  background: rgba(17, 17, 24, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-xl);
-  height: 70px;
-  background: var(--bg-secondary);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-color);
+  gap: 16px;
+  padding: 0 28px;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 50;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.hamburger-btn {
+/* MENU TOGGLE */
+.menu-toggle {
   display: none;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: var(--font-lg);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.menu-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* SEARCH */
+.search-wrap {
+  flex: 1;
+  max-width: 480px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  pointer-events: none;
+  color: var(--text2);
+}
+
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: 10px 40px 10px 44px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
   transition: all 0.2s;
 }
 
-.hamburger-btn:hover {
-  background: var(--bg-glass);
+.search-input::placeholder {
+  color: var(--text3);
 }
 
-@media (max-width: 1024px) {
-  .hamburger-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.search-input:focus {
+  border-color: var(--accent);
+  background: var(--surface2);
+  box-shadow: 0 0 0 3px rgba(232, 54, 79, 0.15);
 }
 
-/* Logo */
-.logo {
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-
-.logo-text {
-  font-family: 'Inter', sans-serif;
-  font-weight: 900;
-  font-size: 1.4rem;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.logo-accent {
-  color: var(--accent-primary);
-}
-
-/* Nav Tabs */
-.nav-tabs {
-  display: flex;
-  gap: 4px;
-}
-
-.nav-tab {
-  padding: 8px 18px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-  border-radius: var(--radius-md);
-  transition: all 0.25s ease;
-  text-decoration: none;
-  position: relative;
-}
-
-.nav-tab:hover {
-  color: var(--text-primary);
-  background: var(--bg-glass);
-}
-
-.nav-tab.active {
-  color: var(--accent-primary);
-  background: rgba(0, 212, 170, 0.1);
-}
-
-.nav-tab.active::after {
-  content: '';
+.search-clear {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 2px;
-  background: var(--accent-primary);
-  border-radius: 2px;
-}
-
-/* Header Right */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-/* Search */
-.search-container {
-  position: relative;
-  flex: 0;
-}
-
-.search-bar {
-  background: transparent;
-  border: none;
-  padding: var(--spacing-sm);
-  width: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-normal);
-}
-
-.search-bar input {
-  display: none;
-  flex: 1;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-sm);
-}
-
-.search-bar input::placeholder {
-  color: var(--text-muted);
-}
-
-/* Expanded state */
-.search-bar.expanded {
-  width: 280px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  justify-content: flex-start;
-  gap: var(--spacing-sm);
-}
-
-.search-bar.expanded input {
-  display: block;
-}
-
-.search-bar.focused {
-  border-color: var(--accent-primary);
-  background: rgba(0, 212, 170, 0.05);
-  box-shadow: 0 0 0 4px rgba(0, 212, 170, 0.1);
-}
-
-.search-bar i {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
   cursor: pointer;
+  padding: 4px;
   transition: color 0.2s;
 }
 
-.search-bar i:hover {
-  color: var(--accent-primary);
+.search-clear:hover {
+  color: var(--text);
 }
 
-.clear-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  border-radius: var(--radius-full);
-  transition: all var(--transition-fast);
-}
-
-.clear-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-glass);
-}
-
-/* Search Results */
-.search-results {
+/* DROPDOWN */
+.search-dropdown {
   position: absolute;
-  top: calc(100% + var(--spacing-sm));
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-height: 420px;
-  overflow-y: auto;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
   z-index: 200;
-}
-
-/* Search Results Dropdown Content */
-.search-results :deep(.highlight) {
-  color: var(--accent-primary);
-  font-weight: 700;
-}
-
-.search-status {
-  padding: 30px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.search-suggestions {
-  padding: 15px;
-}
-
-.suggestion-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-muted);
-  margin-bottom: 15px;
-  padding-left: 5px;
-}
-
-.trending-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.trending-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: var(--text-primary);
-}
-
-.trending-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.trending-rank {
-  font-size: 18px;
-  font-weight: 900;
-  color: var(--accent-primary);
-  width: 25px;
-  text-align: center;
-}
-
-.trending-name {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.trending-icon {
-  font-size: 12px;
-  color: #4cd137;
-  opacity: 0.8;
-}
-
-/* User Actions */
-.user-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.header-icon {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  transition: all 0.25s ease;
-  position: relative;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.header-icon:hover {
-  color: var(--accent-primary);
-  background: rgba(0, 212, 170, 0.08);
-  border-color: rgba(0, 212, 170, 0.15);
-}
-
-.profile-btn:hover {
-  color: var(--accent-primary);
-}
-
-.action-badge-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
-  background: var(--accent-secondary);
-  border: 2px solid var(--bg-secondary);
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
-}
-
-/* Dropdown Menu Styles */
-.dropdown-wrapper {
-  position: relative;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 15px);
-  right: 0;
-  width: 320px;
-  background: var(--bg-secondary);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  padding: var(--spacing-sm);
-  z-index: 1000;
-  animation: dropdownFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes dropdownFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.dropdown-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: var(--spacing-sm);
-}
-
-.dropdown-header h3 {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.text-link {
-  background: transparent;
-  border: none;
-  color: var(--accent-primary);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-/* Notifications Dropdown */
-.notification-list {
-  max-height: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  max-height: 480px;
   overflow-y: auto;
 }
 
-.notification-item {
+.search-suggestions-title {
+  padding: 12px 16px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.search-suggestion {
   display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-color);
-  transition: background 0.2s;
+  padding: 10px 16px;
   cursor: pointer;
-  position: relative;
+  transition: background 0.15s;
+  font-size: 14px;
+  color: var(--text2);
 }
 
-.notification-item:last-child {
-  border-bottom: none;
+.search-suggestion:hover {
+  background: var(--surface);
+  color: var(--text);
 }
 
-.notification-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+.suggestion-rank {
+  font-weight: 700;
+  color: var(--accent);
+  width: 18px;
+  text-align: center;
+  font-size: 16px;
 }
 
-.notification-item.unread {
-  background: rgba(0, 212, 170, 0.03);
+.search-group {
+  border-top: 1px solid var(--border);
 }
 
-.notif-poster {
-  width: 45px;
-  height: 65px;
-  border-radius: 4px;
+.search-group:first-child {
+  border-top: none;
+}
+
+.search-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.search-result:hover {
+  background: var(--surface);
+}
+
+.search-thumb {
+  width: 40px;
+  height: 56px;
+  border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--bg-tertiary);
+  background: var(--surface2);
 }
 
-.notif-poster img {
+.search-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.notif-content {
-  flex: 1;
+.search-thumb-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--surface2);
+}
+
+.search-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-title {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-title :deep(.hl) {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.search-sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.search-category {
+  font-size: 11px;
+  background: var(--surface2);
+  color: var(--text2);
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.search-status {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spin {
+  animation: spinAnim 0.8s linear infinite;
+}
+
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* TOPBAR RIGHT */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text2);
+  position: relative;
+}
+
+.icon-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
 }
 
 .notif-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
   width: 8px;
   height: 8px;
-  background: var(--accent-primary);
+  background: var(--accent);
   border-radius: 50%;
+  border: 2px solid var(--bg2);
+}
+
+/* NOTIFICATION PANEL */
+.notif-panel {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  box-shadow: 0 0 10px var(--accent-primary);
+  top: calc(100% + 12px);
+  right: 0;
+  width: 320px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  display: none;
+  z-index: 300;
+  overflow: hidden;
+  text-align: left;
 }
 
-.notif-title {
+.notif-panel.open {
   display: block;
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 2px;
-  color: var(--text-primary);
 }
 
-.notif-body {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  margin-bottom: 6px;
+.notif-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.notif-mark-read {
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.notif-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  align-items: flex-start;
+}
+
+.notif-item:hover {
+  background: var(--surface);
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-dot-sm {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.notif-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.notif-text b {
+  color: var(--text);
 }
 
 .notif-time {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text3);
+  margin-top: 3px;
 }
 
-/* Profile Dropdown */
-.profile-dropdown {
-  width: 260px;
-  padding: 0;
-  overflow: hidden;
-}
-
-.dropdown-profile-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 20px;
-  background: rgba(255,255,255,0.02);
-}
-
-.avatar-large {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 16px;
-  box-shadow: 0 0 15px rgba(0, 212, 170, 0.3);
-}
-
-.avatar-small {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
-.profile-meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.profile-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.profile-role {
-  font-size: 11px;
-  color: var(--accent-primary);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.divider {
-  height: 1px;
-  background: var(--border-color);
-  margin: 0;
-}
-
-.profile-menu-items {
-  padding: 10px;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 15px;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
-  transform: translateX(5px);
-}
-
-.dropdown-item i {
-  width: 20px;
-  text-align: center;
-  font-size: 16px;
-  opacity: 0.8;
-}
-
-.theme-item {
-  justify-content: space-between;
-}
-
-.toggle-pill {
-  width: 36px;
-  height: 20px;
-  background: #333;
-  border-radius: 12px;
-  position: relative;
-  transition: all 0.3s;
-}
-
-.toggle-pill::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  background: white;
-  border-radius: 50%;
-  transition: all 0.3s;
-}
-
-.toggle-pill.active {
-  background: var(--accent-primary);
-}
-
-.toggle-pill.active::after {
-  transform: translateX(16px);
-  background: #000;
-}
-
-.logout-link {
-  color: #ff4757;
-  margin: 10px;
-}
-
-.logout-link:hover {
-  background: rgba(255, 71, 87, 0.1);
-  color: #ff4757;
-}
-
-/* Search Highlighting */
-:deep(.highlight) {
-  color: var(--accent-primary);
-  font-weight: 700;
-}
-
-.spinner-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100px;
-}
-
-.spinner-small {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .header {
-    padding: 0 var(--spacing-md);
+@media (max-width: 1024px) {
+  .menu-toggle {
+    display: flex;
   }
-
-  .nav-tabs {
-    display: none;
+  .topbar {
+    padding: 0 16px;
   }
-  
-  .search-bar.mobile-open {
-    position: fixed;
-    top: 70px;
-    right: 0;
-    left: 0;
-    width: 100%;
-    transform: none;
-    border-radius: 0;
-    border-top: 1px solid var(--border-color);
-  }
+}
 
-  .logo-text {
-    font-size: 1.2rem;
+@media (max-width: 600px) {
+  .search-wrap {
+    max-width: 100%;
   }
 }
 </style>
