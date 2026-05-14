@@ -8,12 +8,21 @@
         class="hero-slide"
       >
         <!-- Background Image -->
-        <div
-          class="hero-bg"
-          :style="item.backdrop || item.poster
-            ? { backgroundImage: `url(${item.backdrop || item.poster})` }
-            : { background: bgGradients[index % bgGradients.length] }"
-        ></div>
+        <div class="hero-bg">
+          <img
+            v-if="item.backdrop || item.poster"
+            :src="item.backdrop || item.poster"
+            :alt="item.title"
+            :fetchpriority="index === 0 ? 'high' : 'auto'"
+            :loading="index === 0 ? 'eager' : 'lazy'"
+            class="hero-img"
+          />
+          <div
+            v-else
+            class="hero-bg-fallback"
+            :style="{ background: bgGradients[index % bgGradients.length] }"
+          ></div>
+        </div>
 
         <!-- Gradient overlay -->
         <div class="hero-overlay"></div>
@@ -177,9 +186,18 @@ onUnmounted(() => stopAutoPlay())
 .hero-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
+}
+
+.hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.hero-bg-fallback {
+  width: 100%;
+  height: 100%;
 }
 
 /* OVERLAY */

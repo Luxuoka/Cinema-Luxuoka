@@ -222,8 +222,3 @@ body::before {
     radial-gradient(ellipse at 80% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 90%, rgba(74, 158, 255, 0.02) 0%, transparent 40%) !important;
 }
-
-/* ── Disable body * transition slowdown from assets/styles.css ── */
-body *:not(.fade-enter-active):not(.fade-leave-active):not(.toast-enter-active):not(.toast-leave-active) {
-  transition-property: background-color, color, border-color, opacity, transform, box-shadow;
-}

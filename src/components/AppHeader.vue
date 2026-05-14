@@ -356,7 +356,7 @@ if (typeof document !== 'undefined') {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
   padding: 0 28px;
   position: sticky;
   top: 0;
@@ -377,6 +377,7 @@ if (typeof document !== 'undefined') {
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .menu-toggle:hover {
@@ -386,9 +387,12 @@ if (typeof document !== 'undefined') {
 
 /* SEARCH */
 .search-wrap {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
   max-width: 480px;
-  position: relative;
+  z-index: 1;
 }
 
 .search-icon {
@@ -607,6 +611,7 @@ if (typeof document !== 'undefined') {
   align-items: center;
   gap: 8px;
   margin-left: auto;
+  z-index: 2;
 }
 
 .icon-btn {
