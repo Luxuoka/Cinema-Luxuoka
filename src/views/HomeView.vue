@@ -23,6 +23,14 @@
 
       <!-- SKELETON SLIDERS -->
       <div v-if="initialLoading || filtering" class="sliders-skeleton">
+        <!-- CONTINUE WATCHING SKELETON -->
+        <div v-if="userState.isLoggedIn" class="skeleton-section">
+          <div class="skeleton-title shimmer-bg"></div>
+          <div class="skeleton-row">
+            <div v-for="j in 4" :key="j" class="skeleton-card shimmer-bg" style="min-width:260px"></div>
+          </div>
+        </div>
+
         <div v-for="i in 3" :key="i" class="skeleton-section">
           <div class="skeleton-title shimmer-bg"></div>
           <div class="skeleton-row">
@@ -33,6 +41,43 @@
 
 
       <template v-else>
+        <!-- CONTINUE WATCHING SECTION -->
+        <div v-if="userState.isLoggedIn && (watchHistory.length > 0 || userState.historyLoading) && activeFilter === 'all'" class="section">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-play" style="color:var(--accent);margin-right:8px;font-size:14px"></i> 
+              Lanjutkan Menonton
+              <i v-if="userState.historyLoading" class="fas fa-spinner fa-spin" style="font-size:12px;margin-left:8px;opacity:.5"></i>
+            </div>
+          </div>
+          
+          <div v-if="userState.historyLoading && watchHistory.length === 0" class="cards-scroll">
+             <div v-for="j in 4" :key="j" class="skeleton-card shimmer-bg" style="min-width:260px;height:140px"></div>
+          </div>
+
+          <div v-else class="cards-scroll">
+            <router-link
+              v-for="item in watchHistory.slice(0, 10)"
+              :key="item.id"
+              :to="`/watch/${item.type}/${item.id}`"
+              class="cw-card"
+              style="text-decoration:none"
+            >
+              <div class="cw-thumb">
+                <img v-if="item.poster" :src="item.poster" :alt="item.title" style="width:100%;height:100%;object-fit:cover"/>
+                <div v-else class="cw-emoji">🎬</div>
+                <div class="cw-play-overlay">
+                  <div class="cw-play-btn"><svg width="24" height="24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+                </div>
+              </div>
+              <div class="cw-info">
+                <div class="cw-title">{{ item.title }}</div>
+                <div class="cw-ep" v-if="item.episode">Episode {{ item.episode }}</div>
+                <div class="cw-ep" v-else>Film</div>
+              </div>
+            </router-link>
+          </div>
+        </div>
         <!-- FILTERED OR DEFAULT SECTIONS -->
         <template v-if="activeFilter !== 'all'">
           <ContentSlider
@@ -54,6 +99,14 @@
         </template>
 
         <template v-else>
+          <div v-if="!userState.isLoggedIn" class="login-banner-home">
+            <div class="lb-content">
+              <h2>Ingin Pengalaman Lebih Seru?</h2>
+              <p>Login sekarang untuk menyimpan favorit Anda, riwayat tontonan, dan mendapatkan rekomendasi yang pas buat Anda!</p>
+              <button @click="loginUser" class="btn btn-primary lb-btn">Login dengan Google</button>
+            </div>
+          </div>
+
           <!-- RECOMMENDATIONS -->
           <ContentSlider
             v-if="recommendations.length > 0"
@@ -75,9 +128,30 @@
             :items="newReleases"
           />
 
+          <!-- TOP 10 RANKING -->
+          <div class="section top-10-section">
+            <div class="section-header">
+              <div class="section-title">🏆 Top 10 Pekan Ini</div>
+            </div>
+            <div class="top-10-scroll">
+              <router-link 
+                v-for="(item, index) in trendingMovies.slice(0, 10)" 
+                :key="item.id"
+                :to="`/watch/${item.type || 'movie'}/${item.id}`"
+                class="top-10-card"
+              >
+                <div class="rank-number">{{ index + 1 }}</div>
+                <div class="rank-poster">
+                  <img :src="item.poster" :alt="item.title" />
+                </div>
+              </router-link>
+            </div>
+          </div>
+
           <!-- TRENDING SERIES -->
           <ContentSlider
-            title="Trending TV Shows"
+            v-if="trendingSeries.length > 0"
+            title="📺 Trending TV Shows"
             :items="trendingSeries"
           />
 
@@ -129,7 +203,13 @@ import {
 } from '../services/api'
 import { getTrendingAnime } from '../services/animeApi'
 import { getPersonalizedRecommendations } from '../services/recommendations'
-import { watchlist } from '../stores/userStore'
+import { 
+  watchlist, 
+  watchHistory, 
+  userState, 
+  loginUser,
+  initTheme 
+} from '../stores/userStore'
 
 const showToast = inject('toast', null)
 
@@ -168,11 +248,7 @@ const genres = [
   { emoji: '🔍', label: 'Thriller', filter: 'thriller', bg: 'linear-gradient(135deg,rgba(153,153,255,.12),rgba(153,153,255,.04))' },
 ]
 
-const continueWatching = [
-  { emoji: '🦸', title: 'Avengers: Endgame', ep: '1j 11m tersisa • 68% selesai', progress: 68 },
-  { emoji: '👑', title: 'The Boys', ep: 'S4 E3 • 32% selesai', progress: 32 },
-  { emoji: '🔮', title: 'Euphoria', ep: 'S2 Finale • 85% selesai', progress: 85 },
-]
+const continueWatching = []
 
 const genreMap = { action: 28, comedy: 35, drama: 18, horror: 27, scifi: 878 }
 
@@ -536,5 +612,86 @@ onMounted(() => {
   .hero-wrapper {
     padding-bottom: 0;
   }
+}
+.login-banner-home {
+  margin: 40px var(--spacing-md);
+  background: linear-gradient(135deg, rgba(232, 54, 79, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border: 1px solid rgba(232, 54, 79, 0.3);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.lb-content { position: relative; z-index: 2; }
+.lb-content h2 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+.lb-content p { color: var(--text-secondary); max-width: 600px; margin: 0 auto 24px; font-size: 15px; }
+.lb-btn { padding: 12px 32px; font-weight: 700; border-radius: 30px; box-shadow: 0 10px 20px rgba(232, 54, 79, 0.3); }
+
+/* TOP 10 STYLES */
+.top-10-section { margin-bottom: 40px; }
+.top-10-scroll {
+  display: flex;
+  gap: 40px;
+  overflow-x: auto;
+  padding: 20px var(--spacing-md);
+  scrollbar-width: none;
+}
+.top-10-scroll::-webkit-scrollbar { display: none; }
+
+.top-10-card {
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+  min-width: 220px;
+  height: 250px;
+  text-decoration: none;
+}
+
+.rank-number {
+  font-size: 180px;
+  font-weight: 900;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.4);
+  position: absolute;
+  left: -20px;
+  bottom: -20px;
+  z-index: 1;
+  font-family: var(--font-display);
+}
+
+.top-10-card:hover .rank-number {
+  -webkit-text-stroke-color: var(--accent);
+  text-shadow: 0 0 30px rgba(232, 54, 79, 0.4);
+}
+
+.rank-poster {
+  width: 150px;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-left: 60px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.3s;
+  z-index: 2;
+}
+
+.top-10-card:hover .rank-poster {
+  transform: translateY(-10px) scale(1.05);
+}
+
+.rank-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .login-banner-home { padding: 30px 20px; }
+  .lb-content h2 { font-size: 20px; }
+  .rank-number { font-size: 120px; }
+  .top-10-card { min-width: 160px; height: 180px; }
+  .rank-poster { width: 100px; height: 150px; margin-left: 40px; }
 }
 </style>

@@ -11,3 +11,6 @@ app.mount('#app')
 
 // Initialize theme from localStorage
 initTheme()
+
+// Initialize theme from localStorage
+initTheme()

@@ -53,6 +53,11 @@
                 <i class="fas fa-expand"></i>
                 <span>Layar Penuh</span>
               </button>
+              
+              <button class="action-btn" @click="playTrailer">
+                <i class="fas fa-film"></i>
+                <span>Watch Trailer</span>
+              </button>
             </div>
           </div>
           
@@ -68,6 +73,17 @@
               allow="autoplay; fullscreen; encrypted-media"
               referrerpolicy="origin"
             ></iframe>
+            
+            <!-- Player Controls Overlays -->
+            <div class="player-controls-overlay">
+              <button v-if="showSkipIntro" class="btn-skip" @click="skipIntro">Skip Intro</button>
+              <select v-model="playbackSpeed" @change="updateSpeed" class="speed-control">
+                <option value="0.5">0.5x</option>
+                <option value="1">1x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
+            </div>
           </div>
 
           <!-- Player Footer: Next Episode & Controls -->
@@ -99,11 +115,14 @@
             </div>
             
             <div class="user-actions">
+              <button class="btn btn-outline btn-trailer" @click="playTrailer">
+                <i class="fas fa-play"></i> Trailer
+              </button>
               <button 
                 class="btn-circle" 
                 :class="{ 'active': inWatchlist }"
-                @click="toggleWatchlist"
-                title="Add to Watchlist"
+                @click="handleWatchlistClick"
+                :title="userState.isLoggedIn ? 'Add to Watchlist' : 'Login to save Watchlist'"
               >
                 <i :class="inWatchlist ? 'fas fa-check' : 'fas fa-plus'"></i>
               </button>
@@ -167,6 +186,34 @@
               <strong>Status:</strong> {{ content.status }}
             </div>
           </div>
+
+          <!-- Rating & Review Section -->
+          <div class="rating-section">
+            <template v-if="userState.isLoggedIn">
+              <h3>Berikan Rating & Review</h3>
+              <div class="rating-stars">
+                <i 
+                  v-for="star in 5" 
+                  :key="star" 
+                  :class="['fa-star', star <= userRating ? 'fas' : 'far']"
+                  @click="setUserRating(star)"
+                ></i>
+              </div>
+              <textarea 
+                v-model="userReview" 
+                placeholder="Tulis pendapatmu tentang film ini..."
+                class="review-textarea"
+              ></textarea>
+              <button @click="submitRating" class="btn btn-primary submit-rating-btn">
+                Kirim Review
+              </button>
+            </template>
+            <div v-else class="login-prompt-card">
+              <i class="fas fa-lock"></i>
+              <p>Mau kasih rating atau review? <br/><b>Login</b> dulu yuk untuk bergabung dengan komunitas!</p>
+              <button @click="loginUser" class="btn btn-primary btn-sm mt-3">Login dengan Google</button>
+            </div>
+          </div>
         </div>
 
         <!-- Sidebar Panel: Episodes for Series, Trailer for Movies -->
@@ -177,16 +224,26 @@
               <span class="count">{{ content.episodes }} episodes</span>
             </div>
             <div class="episode-list">
-              <button 
+              <div 
                 v-for="ep in content.episodes" 
                 :key="ep"
                 :class="['ep-item', { active: currentEpisode === ep }]"
-                @click="selectEpisode(ep)"
               >
-                <span class="ep-num">{{ ep }}</span>
-                <span class="ep-label">Episode {{ ep }}</span>
-                <i v-if="currentEpisode === ep" class="fas fa-play icon-playing"></i>
-              </button>
+                <div class="ep-main-click" @click="selectEpisode(ep)">
+                  <span class="ep-num">{{ ep }}</span>
+                  <span class="ep-label">Episode {{ ep }}</span>
+                  <i v-if="currentEpisode === ep" class="fas fa-play icon-playing"></i>
+                </div>
+                <button 
+                  v-if="userState.isLoggedIn"
+                  class="ep-watched-btn" 
+                  :class="{ 'is-watched': isEpisodeWatched(ep) }"
+                  @click.stop="toggleWatched(ep)"
+                  title="Tandai sudah ditonton"
+                >
+                  <i class="fas fa-check-circle"></i>
+                </button>
+              </div>
             </div>
           </div>
           
@@ -223,10 +280,23 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getMovieById, getSeriesById } from '../services/api'
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, trackGenreInteraction, updateEpisodeProgress } from '../stores/userStore'
+import { 
+  addToWatchlist, 
+  removeFromWatchlist, 
+  isInWatchlist, 
+  trackGenreInteraction, 
+  updateEpisodeProgress, 
+  addToHistory,
+  userState,
+  loginUser,
+  addRating,
+  getRating,
+  getWatchlistItem,
+  toggleEpisodeWatched
+} from '../stores/userStore'
 import { trackContentView, trackPlayStart } from '../services/analytics'
 
 const route = useRoute()
@@ -241,6 +311,12 @@ const playerContainer = ref(null)
 const playerMode = ref('stream') // 'stream' or 'trailer'
 const movieServer = ref(localStorage.getItem('preferred_movie_server') || 'vidlink')
 
+const trailerMode = ref(false)
+const showSkipIntro = ref(false)
+const playbackSpeed = ref(1)
+const originalVideoUrl = ref('')
+const videoRef = ref(null)
+
 const selectedServer = computed({
   get: () => movieServer.value,
   set: (val) => {
@@ -252,6 +328,8 @@ const selectedServer = computed({
 const currentEpisode = ref(1)
 const currentSeason = ref(1)
 const volume = ref(parseFloat(localStorage.getItem('player_volume')) || 1.0)
+const userRating = ref(0)
+const userReview = ref('')
 
 const servers = [
   { id: 'vidsrcpro', label: 'VidSrc Pro' },
@@ -263,10 +341,44 @@ const servers = [
   { id: '2embed', label: '2Embed' }
 ]
 
+function onTimeUpdate(e) {
+  const time = e.target.currentTime
+  showSkipIntro.value = time > 10 && time < 90
+  
+  if (content.value?.type === 'series' || content.value?.type === 'anime') {
+    if (Math.floor(time) % 30 === 0) { 
+       updateEpisodeProgress(content.value.id, content.value.type, currentEpisode.value)
+    }
+  }
+}
+
+function skipIntro() {
+  if (videoRef.value) {
+    videoRef.value.currentTime = 90
+    showSkipIntro.value = false
+  }
+}
+
+function updateSpeed() {
+  if (videoRef.value) {
+    videoRef.value.playbackRate = parseFloat(playbackSpeed.value)
+  }
+}
+
+function playTrailer() {
+  trailerMode.value = true
+  originalVideoUrl.value = getVideoUrl()
+  // logic to switch video
+  if (showToast) showToast('Memutar Trailer...', 'info')
+}
+
+function stopTrailer() {
+  trailerMode.value = false
+}
 
 const isSeries = computed(() => {
   if (!content.value) return false
-  return content.value.type === 'series'
+  return content.value.type === 'series' || content.value.type === 'anime'
 })
 
 const inWatchlist = computed(() => {
@@ -362,6 +474,7 @@ function saveProgress() {
   
   
   updateEpisodeProgress(content.value.id, content.value.type, currentEpisode.value)
+  addToHistory(content.value, isSeries.value ? currentEpisode.value : null)
 }
 
 function loadProgress() {
@@ -437,6 +550,45 @@ function toggleWatchlist() {
   }
 }
 
+function handleWatchlistClick() {
+  if (!userState.isLoggedIn) {
+    if (showToast) showToast('Login untuk menggunakan fitur Watchlist', 'info')
+    loginUser()
+    return
+  }
+  toggleWatchlist()
+}
+
+async function setUserRating(rating) {
+  userRating.value = rating
+}
+
+async function submitRating() {
+  if (!content.value || userRating.value === 0) return
+  await addRating(content.value.id, content.value.type, userRating.value, userReview.value)
+  if (showToast) showToast('Rating & Review berhasil dikirim!', 'success')
+}
+
+async function loadUserRating() {
+  if (!content.value || !userState.isLoggedIn) return
+  const data = await getRating(content.value.id)
+  if (data) {
+    userRating.value = data.rating
+    userReview.value = data.review || ''
+  }
+}
+
+function isEpisodeWatched(ep) {
+  if (!content.value) return false
+  const item = getWatchlistItem(content.value.id, content.value.type)
+  return item?.watchedEpisodes?.includes(ep) || false
+}
+
+async function toggleWatched(ep) {
+  if (!content.value) return
+  await toggleEpisodeWatched(content.value.id, content.value.type, ep)
+}
+
 function shareContent() {
   const url = window.location.href
   const text = `Nonton ${content.value.title} gratis di Cinema Luxuoka! Kualitas mantap, tanpa ribet. Liat di sini: ${url}`
@@ -482,8 +634,32 @@ watch(volume, (val) => {
   localStorage.setItem('player_volume', val.toString())
 })
 
-onMounted(loadContent)
-watch(() => route.params, loadContent)
+onMounted(async () => {
+  await loadContent()
+  await loadUserRating()
+  window.addEventListener('beforeunload', saveProgress)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', saveProgress)
+  saveProgress() // Save one last time
+})
+
+watch(() => userState.isLoggedIn, (isLoggedIn) => {
+  if (isLoggedIn && content.value) {
+    saveProgress()
+    loadUserRating()
+  }
+})
+
+watch(() => route.params, async () => {
+  await loadContent()
+  await loadUserRating()
+})
+
+watch([currentEpisode, currentSeason], () => {
+  saveProgress()
+})
 </script>
 
 <style scoped>
@@ -796,16 +972,45 @@ watch(() => route.params, loadContent)
   background: transparent;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+.ep-item:last-child {
+  border-bottom: none;
+}
+.ep-main-click {
+  flex: 1;
+  display: flex;
+  align-items: center;
   gap: 15px;
   padding: 12px 20px;
-  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
   text-align: left;
 }
-.ep-item:not(:last-child) { border-bottom: 1px solid var(--border-color); }
-.ep-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-.ep-item.active { background: rgba(0, 212, 170, 0.08); color: var(--accent-primary); }
+.ep-item:hover {
+  background: var(--bg-tertiary);
+}
+.ep-item.active {
+  background: rgba(232, 54, 79, 0.1);
+  color: var(--accent-primary);
+}
+.ep-watched-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: color 0.2s;
+}
+.ep-watched-btn:hover {
+  color: var(--text-primary);
+}
+.ep-watched-btn.is-watched {
+  color: #2ecc71;
+}
 .ep-num { font-size: 12px; font-weight: 800; width: 20px; opacity: 0.4; }
 .ep-label { flex: 1; font-size: 13px; font-weight: 600; }
 .icon-playing { font-size: 9px; }
@@ -850,5 +1055,129 @@ watch(() => route.params, loadContent)
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+.rating-section {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border-color);
+}
+.rating-section h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: var(--accent-primary);
+}
+.rating-stars {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.rating-stars i {
+  font-size: 28px;
+  color: #f1c40f;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.rating-stars i:hover {
+  transform: scale(1.2);
+}
+.review-textarea {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px;
+  color: var(--text-primary);
+  font-family: inherit;
+  margin-bottom: 15px;
+  resize: vertical;
+}
+.submit-rating-btn {
+  padding: 10px 25px;
+  font-weight: 600;
+}
+.login-prompt-card {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+}
+.login-prompt-card i {
+  font-size: 32px;
+  color: var(--accent-primary);
+  margin-bottom: 15px;
+  display: block;
+}
+.login-prompt-card p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.mt-3 { margin-top: 15px; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+/* TOP 10 STYLES */
+.top-10-section { margin-bottom: 40px; }
+.top-10-scroll {
+  display: flex;
+  gap: 40px;
+  overflow-x: auto;
+  padding: 20px var(--spacing-md);
+  scrollbar-width: none;
+}
+.top-10-scroll::-webkit-scrollbar { display: none; }
+
+.top-10-card {
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+  min-width: 220px;
+  height: 250px;
+  text-decoration: none;
+}
+
+.rank-number {
+  font-size: 180px;
+  font-weight: 900;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.4);
+  position: absolute;
+  left: -20px;
+  bottom: -20px;
+  z-index: 1;
+  font-family: var(--font-display);
+}
+
+.top-10-card:hover .rank-number {
+  -webkit-text-stroke-color: var(--accent);
+  text-shadow: 0 0 30px rgba(232, 54, 79, 0.4);
+}
+
+.rank-poster {
+  width: 150px;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-left: 60px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.3s;
+  z-index: 2;
+}
+
+.top-10-card:hover .rank-poster {
+  transform: translateY(-10px) scale(1.05);
+}
+
+.rank-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .rank-number { font-size: 120px; }
+  .top-10-card { min-width: 160px; height: 180px; }
+  .rank-poster { width: 100px; height: 150px; margin-left: 40px; }
 }
 </style>

@@ -27,8 +27,19 @@
         <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
       </svg>
       Watchlist
-      <span v-if="watchlistCount > 0" class="nav-badge nav-badge--count">{{ watchlistCount }}</span>
+      <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
+      <span v-else-if="watchlistCount > 0" class="nav-badge nav-badge--count">{{ watchlistCount }}</span>
     </router-link>
+    <router-link v-if="userState?.isLoggedIn" to="/history" class="nav-item" :class="{ active: $route.path === '/history' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      History
+    </router-link>
+    <div v-else class="sidebar-login-tip">
+      <i class="fas fa-info-circle"></i>
+      Login untuk sinkronisasi
+    </div>
 
     <!-- KATEGORI -->
     <div class="sidebar-section-label">Kategori</div>
@@ -52,12 +63,14 @@
         <line x1="12" y1="17" x2="12" y2="21"/>
       </svg>
       TV Shows
+      <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
     </router-link>
     <router-link to="/anime" class="nav-item" :class="{ active: $route.path === '/anime' }">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
       </svg>
       Anime
+      <i v-if="!userState?.isLoggedIn" class="fas fa-lock lock-sm"></i>
     </router-link>
 
     <!-- SUPPORT -->
@@ -74,12 +87,18 @@
       </svg>
       Request Movie
     </a>
+    <router-link v-if="userState?.isLoggedIn" to="/admin" class="nav-item" :class="{ active: $route.path === '/admin' }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 11V7a4 4 0 10-8 0v4M5 11h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z"/>
+      </svg>
+      Admin Panel
+    </router-link>
   </aside>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { watchlist } from '../stores/userStore'
+import { watchlist, userState } from '../stores/userStore'
 
 defineProps({
   isOpen: {
@@ -224,5 +243,22 @@ const watchlistCount = computed(() => watchlist.length)
   .sidebar.open {
     transform: translateX(0);
   }
+}
+.sidebar-login-tip {
+  margin: 10px 15px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lock-sm {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text3);
+  opacity: 0.6;
 }
 </style>

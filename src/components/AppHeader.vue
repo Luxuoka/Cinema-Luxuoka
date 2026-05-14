@@ -159,31 +159,71 @@
         <!-- Notif Panel -->
         <div class="notif-panel" :class="{ open: notifOpen }">
           <div class="notif-header">
-            <span>Notifikasi</span>
-            <span class="notif-mark-read">Tandai semua dibaca</span>
+            <span>Notifikasi ({{ notifications.length }})</span>
+            <span class="notif-mark-read" @click.stop="handleMarkRead">Tandai semua dibaca</span>
           </div>
-          <div class="notif-item">
-            <div class="notif-dot-sm"></div>
-            <div>
-              <div class="notif-text">Film baru <b>Swapped</b> sudah tersedia!</div>
-              <div class="notif-time">2 jam lalu</div>
-            </div>
+          
+          <div v-if="notifications.length === 0" class="notif-empty">
+            <p>Belum ada notifikasi baru.</p>
           </div>
-          <div class="notif-item">
-            <div class="notif-dot-sm"></div>
+          
+          <div 
+            v-for="notif in notifications" 
+            :key="notif.id" 
+            class="notif-item"
+            :style="{ opacity: notif.read ? 0.6 : 1 }"
+          >
+            <div v-if="!notif.read" class="notif-dot-sm"></div>
+            <div v-else style="width:8px;height:8px;flex-shrink:0"></div>
             <div>
-              <div class="notif-text">Episode baru <b>The Boys S4</b> sudah tayang</div>
-              <div class="notif-time">5 jam lalu</div>
-            </div>
-          </div>
-          <div class="notif-item" style="opacity:0.6">
-            <div style="width:8px;height:8px;flex-shrink:0"></div>
-            <div>
-              <div class="notif-text">Welcome ke CinemaLuxuoka! Nikmati streaming premium.</div>
-              <div class="notif-time">1 hari lalu</div>
+              <div class="notif-text" v-html="notif.text"></div>
+              <div class="notif-time">{{ formatDate(notif.createdAt) }}</div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- User Profile / Login -->
+      <div v-if="userState.isLoggedIn" class="user-profile-btn" @click="toggleUserMenu" id="user-btn">
+        <img :src="currentProfile.avatar || userProfile.avatar" alt="Avatar" class="user-avatar" />
+        
+        <!-- User Menu Panel -->
+        <div class="notif-panel user-menu-panel" :class="{ open: userMenuOpen }">
+          <div class="user-menu-header">
+            <div class="user-menu-name">{{ currentProfile.name || userProfile.username }}</div>
+            <div class="user-menu-email">{{ userProfile.email }}</div>
+          </div>
+          <router-link to="/profiles" class="notif-item user-menu-item" style="text-decoration:none">
+            <i class="fas fa-users" style="width:16px"></i>
+            <span>Ganti Profil</span>
+          </router-link>
+          <router-link to="/profile" class="notif-item user-menu-item" style="text-decoration:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Pengaturan</span>
+          </router-link>
+          <div class="notif-item user-menu-item" @click="handleLogout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Logout
+          </div>
+        </div>
+      </div>
+      <div v-else class="login-wrapper">
+        <button class="google-login-btn" @click="handleLoginSuccess">
+          <svg class="google-icon" viewBox="0 0 24 24" width="16" height="16">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Login
+        </button>
       </div>
     </div>
   </header>
@@ -192,6 +232,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { searchAll } from '../services/api'
+import { decodeCredential } from 'vue3-google-login'
+import { userState, userProfile, currentProfile, notifications, markAllNotifsAsRead, loginUser, logoutUser } from '../stores/userStore'
 
 defineEmits(['toggle-sidebar'])
 
@@ -257,13 +299,49 @@ function highlight(text, query) {
 
 function toggleNotif() {
   notifOpen.value = !notifOpen.value
+  if (notifOpen.value) userMenuOpen.value = false
 }
 
-// Close notif panel on outside click
+function handleMarkRead() {
+  markAllNotifsAsRead()
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 60) return `${diffMin} menit lalu`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `${diffHour} jam lalu`
+  return date.toLocaleDateString()
+}
+
+const userMenuOpen = ref(false)
+
+function toggleUserMenu() {
+  userMenuOpen.value = !userMenuOpen.value
+  if (userMenuOpen.value) notifOpen.value = false
+}
+
+function handleLoginSuccess() {
+  loginUser()
+}
+
+function handleLogout() {
+  logoutUser()
+  userMenuOpen.value = false
+}
+
+// Close panels on outside click
 if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('#notif-btn')) {
       notifOpen.value = false
+    }
+    if (!e.target.closest('#user-btn')) {
+      userMenuOpen.value = false
     }
   })
 }
@@ -658,4 +736,76 @@ if (typeof document !== 'undefined') {
     max-width: 100%;
   }
 }
+
+/* USER PROFILE */
+.user-profile-btn {
+  position: relative;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.user-profile-btn:hover .user-avatar {
+  border-color: var(--accent);
+}
+.user-menu-panel {
+  width: 240px;
+}
+.user-menu-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.user-menu-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+.user-menu-email {
+  font-size: 12px;
+  color: var(--text3);
+  word-break: break-all;
+}
+.user-menu-item {
+  color: var(--text2);
+  font-size: 14px;
+}
+.user-menu-item:hover {
+  color: var(--accent);
+}
+.login-wrapper {
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.google-login-btn:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.google-icon {
+  flex-shrink: 0;
+}
+
 </style>

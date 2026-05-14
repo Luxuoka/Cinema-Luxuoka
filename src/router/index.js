@@ -8,6 +8,12 @@ import GenreView from '../views/GenreView.vue'
 import TrendingView from '../views/TrendingView.vue'
 import AnimeView from '../views/AnimeView.vue'
 import AnimeDetailView from '../views/AnimeDetailView.vue'
+import ProfileView from '../views/ProfileView.vue'
+import HistoryView from '../views/HistoryView.vue'
+import ProfileSelectionView from '../views/ProfileSelectionView.vue'
+import AdminView from '../views/AdminView.vue'
+import LoginRequiredView from '../views/LoginRequiredView.vue'
+import { userState } from '../stores/userStore'
 
 const routes = [
     {
@@ -20,7 +26,6 @@ const routes = [
         name: 'trending',
         component: TrendingView
     },
-
     {
         path: '/movies',
         name: 'movies',
@@ -29,10 +34,9 @@ const routes = [
     {
         path: '/series',
         name: 'series',
-        component: SeriesView
+        component: SeriesView,
+        meta: { requiresAuth: true }
     },
-    // Extra categories removed for a cleaner, more focused experience
-
     {
         path: '/genres',
         name: 'genres',
@@ -41,9 +45,9 @@ const routes = [
     {
         path: '/watchlist',
         name: 'watchlist',
-        component: WatchlistView
+        component: WatchlistView,
+        meta: { requiresAuth: true }
     },
-
     {
         path: '/watch/:type/:id',
         name: 'watch',
@@ -51,15 +55,45 @@ const routes = [
         props: true
     },
     {
+        path: '/admin',
+        name: 'admin',
+        component: AdminView,
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/anime',
         name: 'anime',
-        component: AnimeView
+        component: AnimeView,
+        meta: { requiresAuth: true }
     },
     {
         path: '/watch/anime/:id',
         name: 'watch-anime',
         component: AnimeDetailView,
         props: true
+    },
+    {
+        path: '/profile',
+        name: 'profile',
+        component: ProfileView,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/history',
+        name: 'history',
+        component: HistoryView,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/profiles',
+        name: 'profiles',
+        component: ProfileSelectionView,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/login-required',
+        name: 'login-required',
+        component: LoginRequiredView
     },
     {
         path: '/:pathMatch(.*)*',
@@ -71,6 +105,14 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes
+})
+
+router.beforeEach((to, from, next) => {
+    if (to.meta.requiresAuth && !userState.isLoggedIn) {
+        next({ name: 'login-required', query: { redirect: to.fullPath } })
+    } else {
+        next()
+    }
 })
 
 export default router
