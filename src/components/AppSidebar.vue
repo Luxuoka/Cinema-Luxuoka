@@ -225,6 +225,12 @@ const watchlistCount = computed(() => watchlist.length)
     transform: translateX(0);
   }
 }
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 280px;
+  }
+}
 .sidebar-login-tip {
   margin: 10px 15px;
   padding: 8px 12px;

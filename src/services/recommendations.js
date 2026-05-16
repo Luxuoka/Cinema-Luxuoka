@@ -58,8 +58,39 @@ export function getGenreBasedRecommendations() {
  * Get "Because You Watched" recommendations
  * Based on the user's most recently watched content
  */
-export function getBecauseYouWatched() {
-    return [] // Feature removed
+export async function getBecauseYouWatched() {
+    const history = JSON.parse(localStorage.getItem('cache_history_last') || '[]')
+    if (history.length === 0) return null
+
+    const lastWatched = history[0]
+    const recommendations = []
+
+    try {
+        // Find similar content based on genre of last watched
+        const [movies, series] = await Promise.all([
+            discoverMovies({ sortBy: 'popularity' }).catch(() => []),
+            discoverSeries({ sortBy: 'popularity' }).catch(() => [])
+        ])
+
+        const allContent = [...movies, ...series]
+        const similar = allContent
+            .map(item => ({
+                ...item,
+                similarity: calculateSimilarity(lastWatched.genres || [], item.genres || []),
+                score: scoreContent(item)
+            }))
+            .filter(item => item.id !== lastWatched.id)
+            .sort((a, b) => b.similarity - a.similarity || b.score - a.score)
+            .slice(0, 15)
+
+        return {
+            title: lastWatched.title,
+            items: similar
+        }
+    } catch (error) {
+        console.error('Error fetching similar content:', error)
+        return null
+    }
 }
 
 /**

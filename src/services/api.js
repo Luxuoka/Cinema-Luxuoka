@@ -114,6 +114,18 @@ export async function getTrendingSeries() {
   return [];
 }
 
+// Get trending today (All types)
+export async function getTrendingToday() {
+  const data = await tmdbFetch('/trending/all/day');
+  if (data.results) {
+    return data.results.map(item => {
+      if (item.media_type === 'tv') return mapTmdbSeries(item);
+      return mapTmdbMovie(item);
+    });
+  }
+  return [];
+}
+
 // Get now playing movies (New Releases)
 export async function getNowPlayingMovies() {
   const data = await tmdbFetch('/movie/now_playing');
@@ -198,6 +210,7 @@ export async function discoverMovies(params = {}) {
     with_genres: params.genre,
     primary_release_year: params.year,
     with_origin_country: params.country,
+    'vote_average.gte': params.ratingGte || (params.sortBy === 'vote_average' ? '8.0' : '0'),
     sort_by: sortMap[params.sortBy] || 'popularity.desc',
     'vote_count.gte': params.sortBy === 'vote_average' ? '100' : '20'
   };
@@ -218,6 +231,7 @@ export async function discoverSeries(params = {}) {
     with_genres: params.genre,
     first_air_date_year: params.year,
     with_origin_country: params.country,
+    'vote_average.gte': params.ratingGte || (params.sortBy === 'vote_average' ? '8.0' : '0'),
     sort_by: sortMap[params.sortBy] || 'popularity.desc',
     'vote_count.gte': params.sortBy === 'vote_average' ? '50' : '10'
   };

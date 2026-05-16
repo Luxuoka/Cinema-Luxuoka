@@ -49,6 +49,11 @@
                 <span>{{ playerMode === 'trailer' ? 'Tonton Film' : 'Trailer' }}</span>
               </button>
               
+              <button class="action-btn" @click="togglePiP" title="Picture-in-Picture">
+                <i class="fas fa-external-link-alt"></i>
+                <span>PiP Mode</span>
+              </button>
+              
               <button class="action-btn" @click="toggleFullscreen" title="Fullscreen">
                 <i class="fas fa-expand"></i>
                 <span>Layar Penuh</span>
@@ -625,6 +630,59 @@ function toggleFullscreen() {
   }
 }
 
+async function togglePiP() {
+  try {
+    const iframe = playerContainer.value.querySelector('iframe')
+    if (!iframe) return
+    
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture()
+    } else if (iframe.requestPictureInPicture) {
+      await iframe.requestPictureInPicture()
+    } else {
+      // Fallback for browsers that don't support PiP on iframes easily
+      if (showToast) showToast('PiP mode tidak didukung pada browser ini untuk konten iframe.', 'info')
+    }
+  } catch (err) {
+    console.error('PiP Error:', err)
+  }
+}
+
+function handleKeydown(e) {
+  // Only handle if not typing in textarea/input
+  if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return
+
+  switch (e.key.toLowerCase()) {
+    case 's':
+      if (showSkipIntro.value) skipIntro()
+      break
+    case 'f':
+      toggleFullscreen()
+      break
+    case 'm':
+      volume.value = volume.value > 0 ? 0 : 1
+      break
+    case 'p':
+      // Simulated play/pause if possible, or just toggle trailer
+      if (content.value?.trailer) playerMode.value = playerMode.value === 'trailer' ? 'stream' : 'trailer'
+      break
+  }
+}
+
+function updateMetaTags() {
+  if (!content.value) return
+  document.title = `${content.value.title} - Cinema Luxuoka`
+  
+  const description = content.value.synopsis || `Nonton ${content.value.title} gratis di Cinema Luxuoka.`
+  let metaDesc = document.querySelector('meta[name="description"]')
+  if (!metaDesc) {
+    metaDesc = document.createElement('meta')
+    metaDesc.name = 'description'
+    document.head.appendChild(metaDesc)
+  }
+  metaDesc.setAttribute('content', description.slice(0, 160))
+}
+
 watch(selectedServer, (val) => {
   localStorage.setItem('preferred_server', val)
   if (showToast) showToast(`Server diganti ke ${val}`, 'info')
@@ -638,10 +696,12 @@ onMounted(async () => {
   await loadContent()
   await loadUserRating()
   window.addEventListener('beforeunload', saveProgress)
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', saveProgress)
+  window.removeEventListener('keydown', handleKeydown)
   saveProgress() // Save one last time
 })
 
@@ -651,6 +711,10 @@ watch(() => userState.isLoggedIn, (isLoggedIn) => {
     loadUserRating()
   }
 })
+
+watch(content, (newVal) => {
+  if (newVal) updateMetaTags()
+}, { immediate: true })
 
 watch(() => route.params, async () => {
   await loadContent()
@@ -1048,8 +1112,13 @@ watch([currentEpisode, currentSeason], () => {
 @media (max-width: 480px) {
   .watch-view { padding: 0; }
   .player-section-wrapper { border-radius: 0; margin-bottom: 15px; }
-  .watch-content-layout { padding: 15px; }
-  .server-selector { padding: 10px; }
+  .watch-content-layout { padding: 10px; }
+  .server-selector { padding: 10px; flex-direction: column; align-items: flex-start; }
+  .player-actions { width: 100%; justify-content: space-between; gap: 5px; }
+  .player-actions .action-btn span { display: none; }
+  .player-actions .action-btn { padding: 8px; }
+  .content-title { font-size: 22px; }
+  .user-actions .btn-trailer { display: none; }
 }
 
 @keyframes fadeIn {

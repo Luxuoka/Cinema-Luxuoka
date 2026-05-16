@@ -118,7 +118,7 @@ if (auth) {
                 } else {
                     console.warn("No profile found for user")
                     // Fallback to a dummy profile to avoid crash
-                    selectProfile({ id: 'main', name: 'User', avatar: '' })
+                    selectProfile({ id: 'main', name: user.displayName || 'User', avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.displayName}` })
                 }
 
                 // IMPORTANT: Login state ONLY set after profile selection to avoid race conditions
@@ -175,8 +175,8 @@ export function selectProfile(profile) {
     if (!profile) return
     
     currentProfile.id = profile.id || 'main'
-    currentProfile.name = profile.name || 'User'
-    currentProfile.avatar = profile.avatar || ''
+    currentProfile.name = profile.name || userProfile.username
+    currentProfile.avatar = profile.avatar || userProfile.avatar
     currentProfile.favoriteGenres = profile.favoriteGenres || []
     
     localStorage.setItem(`profile_${userState.uid}`, profile.id)

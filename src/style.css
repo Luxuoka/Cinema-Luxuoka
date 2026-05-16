@@ -222,3 +222,22 @@ body::before {
     radial-gradient(ellipse at 80% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 90%, rgba(74, 158, 255, 0.02) 0%, transparent 40%) !important;
 }
+
+/* ── RESPONSIVE UTILITIES ── */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar: 0px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: var(--spacing-md) !important;
+  }
+}
+
+.mobile-only { display: none; }
+@media (max-width: 768px) {
+  .mobile-only { display: block; }
+  .desktop-only { display: none; }
+}

@@ -21,6 +21,7 @@
         type="text"
         v-model="searchQuery"
         placeholder="Cari film, series, anime..."
+        aria-label="Cari konten"
         @input="handleSearch"
         @focus="searchFocused = true"
         @blur="handleBlur"
@@ -435,6 +436,31 @@ if (typeof document !== 'undefined') {
   box-shadow: 0 0 0 3px rgba(232, 54, 79, 0.15);
 }
 
+@media (max-width: 768px) {
+  .search-wrap {
+    max-width: 100%;
+    padding: 0 10px;
+    position: relative;
+    left: 0;
+    transform: none;
+    order: 3;
+    margin-top: 10px;
+  }
+  .topbar {
+    height: auto;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .search-input {
+    font-size: 13px;
+    padding: 8px 32px 8px 36px;
+  }
+  .topbar-right {
+    order: 2;
+  }
+}
+
 .search-clear {
   position: absolute;
   right: 12px;
@@ -739,7 +765,8 @@ if (typeof document !== 'undefined') {
     display: flex;
   }
   .topbar {
-    padding: 0 16px;
+    padding: 0 12px;
+    height: 56px;
   }
 }
 

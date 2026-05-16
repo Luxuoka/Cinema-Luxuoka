@@ -19,6 +19,18 @@
         >
           {{ filter.label }}
         </button>
+
+        <div class="filter-divider"></div>
+
+        <select v-model="activeYear" class="filter-select">
+          <option value="">Tahun</option>
+          <option v-for="year in yearFilters" :key="year" :value="year">{{ year }}</option>
+        </select>
+
+        <select v-model="activeRating" class="filter-select">
+          <option value="">Rating</option>
+          <option v-for="r in ratingFilters" :key="r.value" :value="r.value">{{ r.label }}</option>
+        </select>
       </div>
 
       <!-- SKELETON SLIDERS -->
@@ -107,6 +119,14 @@
             </div>
           </div>
 
+          <!-- TRENDING TODAY -->
+          <ContentSlider
+            v-if="trendingToday.length > 0"
+            title="✨ Trending Hari Ini"
+            subtitle="— paling banyak ditonton"
+            :items="trendingToday"
+          />
+
           <!-- RECOMMENDATIONS -->
           <ContentSlider
             v-if="recommendations.length > 0"
@@ -117,8 +137,8 @@
 
           <!-- TRENDING MOVIES -->
           <ContentSlider
-            title="🔥 Trending"
-            subtitle="— minggu ini"
+            title="🔥 Populer Minggu Ini"
+            subtitle="— film pilihan"
             :items="trendingMovies"
           />
 
@@ -199,7 +219,8 @@ import {
   getTrendingSeries,
   getNowPlayingMovies,
   discoverMovies,
-  discoverSeries
+  discoverSeries,
+  getTrendingToday
 } from '../services/api'
 import { getTrendingAnime } from '../services/animeApi'
 import { getPersonalizedRecommendations } from '../services/recommendations'
@@ -216,6 +237,7 @@ const showToast = inject('toast', null)
 const trendingMovies = ref([])
 const trendingSeries = ref([])
 const trendingAnime = ref([])
+const trendingToday = ref([])
 const newReleases = ref([])
 const featuredItems = ref([])
 const recommendations = ref([])
@@ -224,6 +246,8 @@ const filtering = ref(false)
 const filteredMovies = ref([])
 const filteredSeries = ref([])
 const activeFilter = ref('all')
+const activeYear = ref('')
+const activeRating = ref('')
 
 const filters = [
   { label: 'Semua', value: 'all' },
@@ -233,8 +257,14 @@ const filters = [
   { label: 'Horror', value: 'horror' },
   { label: 'Sci-Fi', value: 'scifi' },
   { label: 'Anime', value: 'anime' },
-  { label: '2024', value: '2024' },
   { label: 'Top Rated', value: 'top' },
+]
+
+const yearFilters = ['2025', '2024', '2023', '2022', '2021', '2020']
+const ratingFilters = [
+  { label: '⭐ 8+', value: '8' },
+  { label: '⭐ 7+', value: '7' },
+  { label: '⭐ 6+', value: '6' }
 ]
 
 const genres = [
@@ -275,18 +305,20 @@ async function loadContent() {
   if (activeFilter.value === 'all') {
     initialLoading.value = true
     try {
-      const [movies, series, anime, newMovies, recs] = await Promise.all([
+      const [movies, series, anime, newMovies, recs, today] = await Promise.all([
         getTrendingMovies(),
         getTrendingSeries(),
         getTrendingAnime(15),
         getNowPlayingMovies(),
-        getPersonalizedRecommendations(15)
+        getPersonalizedRecommendations(15),
+        getTrendingToday()
       ])
       trendingMovies.value = movies
       trendingSeries.value = series
       trendingAnime.value = anime
       newReleases.value = newMovies
       recommendations.value = recs || []
+      trendingToday.value = today || []
       const source = newMovies.length > 0 ? newMovies : movies
       featuredItems.value = source.filter(m => m.poster || m.backdrop).slice(0, 8)
     } finally {
@@ -300,8 +332,11 @@ async function loadContent() {
     const filter = activeFilter.value
     let params = {}
     if (genreMap[filter]) params.genre = genreMap[filter]
-    else if (filter === '2024') params.year = '2024'
     else if (filter === 'top') params.sortBy = 'vote_average'
+    
+    if (activeYear.value) params.year = activeYear.value
+    if (activeRating.value) params.ratingGte = activeRating.value
+
     const [movies, series] = await Promise.all([
       discoverMovies(params),
       discoverSeries(params)
@@ -317,9 +352,13 @@ async function loadContent() {
 
 function setFilter(value) {
   activeFilter.value = value
+  if (value === 'all') {
+    activeYear.value = ''
+    activeRating.value = ''
+  }
 }
 
-watch(activeFilter, () => loadContent())
+watch([activeFilter, activeYear, activeRating], () => loadContent())
 
 onMounted(() => {
   loadContent()
@@ -387,6 +426,33 @@ onMounted(() => {
   border-color: var(--accent);
   color: #fff;
   font-weight: 500;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 10px;
+}
+
+.filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: var(--border2);
+}
+
+.filter-select:focus {
+  border-color: var(--accent);
 }
 
 /* SKELETON SLIDERS */

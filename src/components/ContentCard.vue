@@ -1,6 +1,6 @@
 <template>
   <div class="movie-card" @click="navigateToWatch">
-    <div class="card-thumb">
+    <div class="card-thumb" role="img" :aria-label="item.title">
       <img v-if="item.poster" :src="item.poster" :alt="item.title" loading="lazy" @error="handleImgError" />
       <div v-else class="card-thumb-placeholder">🎬</div>
 

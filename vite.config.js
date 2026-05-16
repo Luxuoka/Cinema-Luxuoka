@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import sitemap from 'vite-plugin-sitemap'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
@@ -20,50 +21,37 @@ export default defineConfig({
         '/anime',
       ]
     }),
-    ViteImageOptimizer({
-      test: /\.(jpe?g|png|gif|tiff|webp|svg|avif)$/i,
-      exclude: undefined,
-      include: undefined,
-      includePublic: true,
-      logStats: true,
-      ansiColors: true,
-      svg: {
-        multipass: true,
-        plugins: [
+    ViteImageOptimizer(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      manifest: {
+        name: 'Cinema Luxuoka',
+        short_name: 'Luxuoka',
+        description: 'Nonton film, series, dan anime terbaru gratis dengan kualitas terbaik di Cinema Luxuoka.',
+        theme_color: '#0a0a0f',
+        background_color: '#0a0a0f',
+        display: 'standalone',
+        icons: [
           {
-            name: 'preset-default',
-            params: {
-              overrides: {
-                cleanupNumericValues: false,
-              },
-            },
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
           },
-          'removeViewBox',
-          'sortAttrs',
           {
-            name: 'addAttributesToSVGElement',
-            params: {
-              attributes: [{ xmlns: 'http://www.w3.org/2000/svg' }],
-            },
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
           },
-        ],
-      },
-      png: {
-        quality: 85,
-      },
-      jpeg: {
-        quality: 85,
-      },
-      jpg: {
-        quality: 85,
-      },
-      webp: {
-        lossless: true,
-      },
-      avif: {
-        lossless: true,
-      },
-    }),
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      }
+    })
   ],
   server: {
     proxy: {
