@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cinema Luxuoka</title>
+  <meta name="google-site-verification" content="SzDcZz7bb0oFSlTtgvsAqkpGWkJ91goCcejq9zB5Pc4" />
+  <meta name="description"
+    content="Nonton film dan series TV terbaru dengan kualitas HD gratis di Cinema Luxuoka. Platform streaming premium dengan fitur watchlist dan rekomendasi pintar." />
+  <meta name="keywords" content="nonton film, streaming series, cinema luxuoka, film gratis, series tv online" />
+  <meta name="author" content="Cinema Luxuoka Team" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://cinema-luxuoka.vercel.app" />
+
+  <!-- Preconnect to TMDB CDN & API for ultra-fast posters & data -->
+  <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
+  <link rel="dns-prefetch" href="https://image.tmdb.org" />
+  <link rel="preconnect" href="https://api.themoviedb.org" crossorigin />
+  <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+
+  <!-- Google Fonts: Bebas Neue + DM Sans + DM Serif Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&display=swap" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&display=swap"
+      rel="stylesheet" />
+  </noscript>
+
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style"
+    crossorigin />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  </noscript>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cinema-luxuoka.vercel.app" />
+  <meta property="og:title" content="Cinema Luxuoka - Premium Streaming Platform" />
+  <meta property="og:description"
+    content="Platform streaming premium untuk nonton film, TV series, dan anime gratis dengan kualitas HD. Dark aesthetic & experience terbaik." />
+  <meta property="og:image" content="https://cinema-luxuoka.vercel.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Cinema Luxuoka" />
+  <meta property="og:locale" content="id_ID" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://cinema-luxuoka.vercel.app" />
+  <meta name="twitter:title" content="Cinema Luxuoka - Premium Streaming Platform" />
+  <meta name="twitter:description"
+    content="Platform streaming premium untuk nonton film, TV series, dan anime gratis. Dark aesthetic & experience terbaik." />
+  <meta name="twitter:image" content="https://cinema-luxuoka.vercel.app/og-image.png" />
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Cinema Luxuoka",
+    "url": "https://cinema-luxuoka.vercel.app",
+    "description": "Platform streaming premium untuk nonton film, TV series, dan anime dengan kualitas HD.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://cinema-luxuoka.vercel.app/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Cinema Luxuoka",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://cinema-luxuoka.vercel.app/og-image.png"
+      }
+    }
+  }
+  </script>
+
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Google tag (gtag.js) -->
+  <script>
+    window.addEventListener('load', function () {
+      var script = document.createElement('script');
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-FHXM1M9DK2';
+      script.async = true;
+      document.head.appendChild(script);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-FHXM1M9DK2');
+    });
+  </script>
+
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
